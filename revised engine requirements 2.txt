@@ -1,0 +1,411 @@
+Unified Engines, DrumKit & FX Requirements — v1.5
+Target: STM32H7 @ ~600 MHz, 48 kHz, float32, external RAM available Scope: Real-time synthesis engines (Mutable-inspired), DrumKit engine, per-voice Channel Strip, per-engine insert FX, bus/send FX, master FX, modulation, SmartKnob haptics, budgets, presets, metadata, testing, deliverables, and licensing.
+
+1) Goals
+Musically solid, deterministic, real-time safe engines ready for polyphony.
+Consistent macro interface across engines: HARMONICS, TIMBRE, MORPH.
+Per-voice Channel Strip (HPF → LPF/SVF → Comp → Drive → Tilt EQ).
+DrumKit with multiple synthesized slots, choke groups, and shared sends.
+Lightweight per-engine inserts; heavier/latent FX on buses; final polish on master.
+Tactile SmartKnob experience with detents, torque ramps, and “feel the curve” where helpful.
+
+2) Platform & Audio Contract
+Sample rate: default 48 kHz (engines are rate-agnostic; host passes sampleRate to prepare()).
+Block size: power-of-two 32–128 samples (≤256 supported).
+Format: 32-bit float in [−1.0, +1.0], ≥6 dB internal headroom.
+Channels: mono per voice unless an engine is intrinsically stereo (exposes isStereo()).
+RT constraints: no heap allocation after prepare(), no locks/logging/I/O on audio thread.
+Determinism: identical events + seed ⇒ bit-identical output.
+Denormals: FTZ/DAZ enabled (or DC guards where needed).
+
+3) Processing Model & Scheduling (Host)
+Per audio block:
+Pull MIDI/events (lock-free queue).
+For each active voice: Engine Core → Channel Strip → Insert FX (≤2) → Sends tap.
+Sum parts and buses; process Bus FX A/B/C; sum with dry; process Master Inserts → Limiter.
+Output via SAI/I²S DMA (double-buffer).
+Control-rate: host smooths parameters every 1–2 blocks (≈750–1500 Hz). Engines also apply internal 2–10 ms slews for click-free moves.
+
+4) Common Engine API
+
+struct RenderContext {
+  float pitch_semitones;   // MIDI note as semitones
+  float fine_cents;        // +/-100c
+  float gate;              // 0/1
+  float aftertouch;        // 0..1
+  float modWheel;          // 0..1
+  uint32_t randomSeed;     // per-voice or per-block seed
+
+  // Smoothed, per-block macros (0..1 unless noted)
+  float HARMONICS, TIMBRE, MORPH, LEVEL;
+  float EXTRA1, EXTRA2;    // engine-specific optional
+};
+
+class IEngine {
+public:
+  virtual void prepare(double sampleRate, int maxBlockSize) = 0;
+  virtual void reset() = 0;               // silent within 1 block
+  virtual void noteOn(float note, float velocity, uint32_t id) = 0;
+  virtual void noteOff(uint32_t id) = 0;  // may tail
+  virtual void setParam(int paramID, float v01) = 0;           // normalized
+  virtual void setMod(int paramID, float value, float depth) = 0; // per-block
+  virtual void render(const RenderContext&, float* out, int n) = 0; // mono unless stereo
+  virtual bool isStereo() const = 0;
+  virtual ~IEngine() {}
+};
+Canonical parameter IDs appear in Appendix C.
+
+5) Modulation Contract
+Required destinations: PITCH (in semitones), HARMONICS, TIMBRE, MORPH, LEVEL.
+Host pre-sums modulation sources; engine clamps to domain and slews (2–10 ms).
+FM-style engines may bypass pitch slew (documented per engine).
+
+6) Anti-Alias & Quality
+Oscillators: BLEP/PolyBLEP (or equivalent) for band-limited discontinuities.
+Folders/shapers: 2× oversampling above drive/brightness threshold; linear-phase FIR decimator ≤16 taps.
+Wavetable: ≥4 mip levels, cubic interpolation.
+Target at 48 kHz: alias energy ≥20 dB below fundamental at nominal settings (document exceptions).
+
+7) CPU & Memory Budgets (per 64-sample block, indicative)
+Light ≤3 k cycles: MacroVA/FM/Noise/Peaks-style drums
+Medium ≤4 k: Wavetable/Tides/Waveshaper
+Heavy ≤12 k: RingsVoice; MacroChord/Harmonics (high partial counts)
+Very Heavy ≤18 k: ElementsVoice
+Per-voice state ≤16 KB (Rings/Elements ≤64 KB).
+Keep hot state (filters, envelopes, modal lines) on-chip; large tables in flash; long histories in cacheable external RAM only when necessary.
+
+8) Per-Voice Channel Strip (all engines & DrumKit slots)
+Default order (“Clean”): Core → HPF → LPF(SVF) → Comp → Drive → TiltEQ Alternate (“Dirty”): Core → Drive → HPF → LPF → Comp → TiltEQ
+Parameters & ranges (normalized unless noted)
+HPF_CUTOFF 10–1000 Hz (log)
+LPF_CUTOFF 200 Hz–18 kHz (log)
+LPF_RES 0–0.90 (gain-comp; self-osc blocked >0.9)
+FLT_KEYTRACK 0–1 ⇒ 0–100 % tracking
+FLT_ENV_AMT −1..+1 (center=0)
+FLT_ATTACK 0.5–100 ms (log)
+FLT_DECAY 5–2000 ms (log)
+FLT_SUSTAIN 0–1
+FLT_RELEASE 10–3000 ms (log)
+COMP_AMOUNT 0–1 (one-knob; soft knee; A≈10 ms, R≈120 ms; no lookahead)
+PUNCH 0–1 (transient enhancer macro)
+DRIVE 0–1 (asym soft-clip; level-compensated)
+DRIVE_TONE 0–1 (odd/even emphasis, pre/post blend)
+BODY −6..+6 dB (low shelf ~120 Hz)
+AIR −6..+6 dB (high shelf ~6–8 kHz)
+STRIP_MODE {Clean, Dirty}, STRIP_ENABLE {On, Off}
+Strip CPU target ≤1.2 k cycles/voice/block. Defaults (pitched): HPF 30 Hz, LPF 16 kHz, RES 0.15, KEYTRACK 0.5, FLT EG 5/200/0.2/300 ms, FLT_ENV_AMT 0.2, COMP 0.15, PUNCH 0.2, DRIVE 0.1, BODY +0.5 dB, AIR +0.5 dB. Drum defaults in §10.5.
+
+9) Engine Catalogue
+Each engine supports the macro triplet (HARMONICS, TIMBRE, MORPH), optional EXTRA1/EXTRA2, the Channel Strip (§8), per-engine inserts (§11), and exposes metadata (§16).
+9.1 MacroVA (Virtual-Analog)
+Role: band-limited classic shapes + unison.
+Macros: HARMONICS (shape blend), TIMBRE (PW/curve), MORPH (unison amount).
+Extras: UNISON_COUNT {1,2,3,5}, UNISON_SPREAD (0–20 c), SUB_LEVEL (−∞..0 dB), NOISE_MIX (0–1), SYNC_DEPTH (0–1; BLEP’d).
+CPU: ≤1.5 k (no unison), ≤2.5 k (with unison).
+Quality: Normal/High (unison dithering & mild phase randomization).
+9.2 MacroFM (2-Op)
+Macros: HARMONICS (ratio index map {0.5,1,1.5,2,3,4,5,7,9}), TIMBRE (index, exp mapped 0..~8), MORPH (feedback).
+Extras: ALGO {C←M, C←M+FB, Cross}, BRIGHT_TILT (±6 dB), FIXED_MOD {Off, On}.
+CPU: ≤2.0 k; optional 2× OS when index>0.7 and f0>3 kHz.
+9.3 MacroWaveshaper (Fold)
+Macros: HARMONICS (pre-emphasis tilt), TIMBRE (fold depth), MORPH (symmetry).
+Extras: FOLD_MODE {tanh, diode, folder}, POST_LP (2–12 kHz).
+CPU: ≤3.5 k including 2× OS at high drive.
+9.4 MacroWavetable
+Macros: HARMONICS (frame 0–63), TIMBRE (intra-morph/tilt), MORPH (bank 0–3).
+Extras: UNISON_3V {Off, On} + UNISON_SPREAD (0–12 c), SUB_LEVEL, INTERP {cubic, linear}.
+Tables: ≥4 banks × 64 frames, 4 mip levels.
+CPU: ≤2.5 k.
+9.5 MacroChord
+Macros: HARMONICS (chord type stepped), TIMBRE (spread 0–12 st), MORPH (detune).
+Extras: VOICES {3,4,5}, SOURCE {VA, WT-A}, STRUM_MS (0–40 ms).
+CPU: ≤4 k.
+9.6 MacroHarmonics (Additive)
+Controls: PARTIAL_COUNT (1–16), DECAY_EXP (0–2; 1/f^x), INHARMONICITY (0–1), EVEN_ODD_BIAS (−1..+1), BANDLIMIT_MODE {auto, strict}.
+CPU: ≤4 k @16 partials.
+9.7 Formant/Vocal
+Controls: VOWEL (A-E-I-O-U morph), BANDWIDTH (0–1), BREATH (0–1), FORMANT_SHIFT (±12 st), GLOTTAL_SHAPE (0–1).
+CPU: ≤3 k.
+9.8 Noise/Particles
+Controls: DENSITY_HZ (1–200 Hz), GRAIN_MS (5–60 ms), BP_CENTER (400–6 kHz), BP_Q (0.5–2), SPRAY (0–1).
+CPU: ≤2 k.
+9.9 TidesOsc (Slope Oscillator)
+Controls: CONTOUR (sine→ramp→pulse), SLOPE (0–1), UNISON (0–1), CHAOS (0–1), LFO_MODE {Off, On}.
+CPU: ≤2.5 k.
+9.10 RingsVoice (Exciter + Modal Resonator)
+Controls: STRUCTURE, BRIGHTNESS, POSITION; EXCITER {mallet,bow,blow}; DAMPING, SPACE_MIX, STEREO {Off, On}.
+CPU: 8–12 k; recommended ≤4 voices.
+9.11 ElementsVoice (Rich Physical Model)
+Controls: GEOMETRY, ENERGY, DAMPING; EXCITER_BAL (bow/blow/strike); SPACE, NOISE_COLOR, STEREO.
+CPU: 12–18 k; recommended ≤2–4 voices.
+
+10) DrumKit Engine
+10.1 API
+
+class DrumKit {
+public:
+  void prepare(double sr, int maxBlockSize);
+  void reset();
+  void render(const RenderContext&, float* outL, float* outR, int n);
+
+  void noteOn(uint8_t midiNote, float velocity, uint32_t id);
+  void noteOff(uint32_t id);
+
+  void setKitParam(int kitParamID, float v01);
+  void setSlotParam(int slot, int paramID, float v01);
+
+  void setMapping(uint8_t midiNote, int slot, uint8_t variation); // 0..3
+  void setChokeGroup(int slot, int groupId); // 0 = none
+  void setSeed(uint32_t);
+  SlotMeters getSlotMeters(int slot) const; // optional
+};
+10.2 Structure & Performance
+Slots: default 12 (configurable 8–16).
+Per-slot polyphony: Kick/Snare/Tom/Clap 1–2; Hats/Cymbals 2–4.
+Choke groups: ≥4 (OH/CH share).
+Accent: global 0..1 + per-hit from velocity curve.
+Sends: per slot SEND_A/B/C (scalar taps).
+Mixer: per slot LEVEL (log), PAN (−1..+1), mute/solo.
+CPU: ≤120 k cycles/block with ~8 concurrent hits (no bus FX).
+Channel Strip: identical to §8 per slot.
+Per-slot insert: one slot from §11 (default off).
+10.3 DrumModel Interface (reused stand-alone)
+
+class IDrumModel {
+public:
+  virtual void prepare(double sr, int maxBlock) = 0;
+  virtual void reset() = 0;
+  virtual void trigger(float velocity, float accent, uint8_t variation) = 0;
+  virtual void noteOff() {}               // optional
+  virtual void process(float* out, int n) = 0; // mono
+  virtual void setParam(int id, float v01) = 0;
+  virtual ~IDrumModel() {}
+};
+Variations: up to 4 per slot; switching is click-free (≤5 ms crossfade if required).
+10.4 Required DrumModels (v1)
+KickAnalog — TUNE, DECAY, ATTACK, BEND, TONE, DRIVE.
+KickFM — RATIO, INDEX, DECAY, CLICK, TONE, DRIVE.
+SnareAnalog — TUNE, DECAY, SNAPPY, TONE, BODY.
+Clap — BURSTS, SPREAD, DECAY, TONE, DRIVE.
+HatClosed/HatOpen — DECAY, TONE, METAL, DRIVE (shared choke).
+Tom — TUNE, DECAY, DAMP, TONE, DRIVE.
+Cymbal/Ride — PING, DECAY, TONE, SHIMMER.
+10.5 Defaults (per-slot)
+Kicks: HPF 20 Hz, LPF 8–10 kHz, COMP 0.35, DRIVE 0.2, BODY +2 dB, AIR −1 dB.
+Hats: HPF 200 Hz, LPF 11–12 kHz, COMP 0.2, DRIVE 0.25, AIR +2 dB.
+10.6 Mapping (26-key)
+Provide presets: GM-ish, Drum Wall (26), Split (left drums/right pitched). Custom mapping is editable and saved with the kit. (See Appendix B for GM-ish default.)
+
+11) Per-Engine Insert FX (per voice)
+Design rules: zero added latency; light CPU; ≤2 insert slots per engine voice; default off (presets may enable one); tails decay to −60 dBFS ≤2 s after noteOff().
+Types & parameters
+Chorus / Ensemble (2–4 voices) FX_CHORUS_RATE 0.1–6 Hz (log), FX_CHORUS_DEPTH 0–1, FX_CHORUS_VOICES {2,3,4}, FX_CHORUS_MIX 0–1. CPU: Light (≤1.2 k). RAM: short delays on-chip.
+Flanger (optional through-zero) FX_FLANGE_RATE 0.03–2 Hz, DEPTH 0–1, FEEDBACK −1..+1, MANUAL 0–1, MIX 0–1. CPU: Light–Med (≤1.8 k).
+Phaser (4/6/8 stages) STAGES {4,6,8}, RATE 0.05–3 Hz, DEPTH 0–1, FEEDBACK −1..+1, MIX 0–1. CPU: Light (≤1.2 k).
+Tremolo / Auto-Pan RATE 0.1–15 Hz, SHAPE {sine,tri,sq}, DEPTH 0–1, STEREO {Off,On}, MIX 0–1. CPU: Tiny (≤0.5 k).
+Bit/Rate Crusher BITS 6–16, SRATE_DIV ×1–×16, FILTER 2–12 kHz, MIX 0–1. CPU: Tiny.
+Mini Delay (slapback ≤120 ms) TIME 10–120 ms, FEEDBACK 0–0.7, TONE (LP tilt), MIX 0–1. CPU: Light; on-chip RAM.
+Suggested defaults
+MacroVA: Chorus subtle.
+FM: Phaser 6-stage slow.
+Wavetable: Chorus → Flanger (light).
+Waveshaper: Phaser subtle.
+Chord/Harmonics: Ensemble 3–4 voices.
+Formant: Mini Delay 60 ms, dark.
+Tides: Chorus subtle.
+Rings/Elements: typically none (use sends).
+
+12) Sends & Bus Architecture
+Sends:
+Send A → Reverb bus
+Send B → Texture bus (granular/looper)
+Send C → Spatial/Delay bus Tap post-inserts (after Channel Strip and per-voice inserts). Range 0..1. Defaults: A/B as in v1.3; C defaults to 0.
+Each bus has: Bus Input Sum → Bus Inserts (≤2) → Bus Output.
+
+13) Bus FX
+13.1 Bus A — Reverb (primary)
+Algorithm: stereo FDN/plate with optional early reflections. Params: BUS_REV_PREDELAY 0–40 ms, BUS_REV_RT60 0.6–6.0 s, BUS_REV_SIZE {S,M,L}, BUS_REV_HFDAMP 0–1, BUS_REV_LOCUT 20–200 Hz, BUS_REV_MOD 0–1, BUS_REV_MIX 0–1. CPU: Med (≤120 k). RAM: ~0.5–1.0 MB (aim on-chip). Latency: 0.
+13.2 Bus B — Texture (granular/looper)
+Algorithm: stereo granular with freeze. Params: BUS_GRAN_DENSITY 0–1, BUS_GRAN_SIZE 30–120 ms, BUS_GRAN_PITCH ±12 st, BUS_GRAN_SPRAY 0–30 ms, BUS_GRAN_FB 0–1, BUS_GRAN_DIFF 0–1, BUS_GRAN_FREEZE {Off,On}, BUS_GRAN_MIX 0–1. CPU: Med–Heavy (150–250 k). RAM: 10–30 s stereo buffer in external RAM (≈11.5–34.5 MB). Latency: 10–40 ms (document).
+13.3 Bus C — Spatial Delay / Chorus
+Pick one per scene:
+Stereo Delay (tempo-sync / ping-pong) BUS_DLY_TIME_L/R (ms) or BUS_DLY_SYNC (1/64…2 bars), BUS_DLY_FB 0–1, BUS_DLY_TONE (tilt), BUS_DLY_XFEED 0–1, BUS_DLY_MIX 0–1. CPU: Light–Med (≤80 k). RAM: seconds of stereo delay in external RAM.
+Wide Chorus (bus level) RATE, DEPTH, VOICES (4–8), MIX. CPU: Med (≤80 k).
+13.4 Bus utilities (optional Insert 2)
+Tilt EQ (±6 dB) / Shelves (±6 dB @120 Hz, @6–8 kHz) / Saturator (0–1). CPU: Tiny–Light.
+
+14) Master Bus
+Fixed order: (Bus A + Bus B + Bus C + Dry) → Master Inserts (≤3) → Limiter → Output
+14.1 Master Inserts
+Glue Compressor MASTER_COMP_THRESH −30..0 dB, MASTER_COMP_RATIO 1.3–2.5:1, MASTER_COMP_ATTACK 10–30 ms, MASTER_COMP_RELEASE 80–200 ms, MASTER_COMP_MIX 0–1. (No lookahead.)
+Tone (Shelves/EQ) MASTER_TONE_LOW ±4 dB @120 Hz, MASTER_TONE_HIGH ±4 dB @8 kHz.
+Stereo Tool MASTER_ST_WIDTH 0–1.5, MASTER_ST_TILT ±3 dB.
+14.2 Master Limiter
+Brickwall with ≤1 ms lookahead. MASTER_LIM_CEILING −0.3 dBFS, MASTER_LIM_RELEASE 50–200 ms. CPU: Light. Latency: ≤1 ms (global).
+
+15) SmartKnob Interaction & Haptics
+15.1 Policies
+Perceptual-Uniform (default): constant torque; mapping handles log feel (freq/time/level).
+Curve-Expressive: torque ∝ normalized |dx/dp| (slope in physical units) to “feel” hot zones (FM index, fold/drive, resonance, comp amount, inharmonicity).
+Guard-Rail: ramp torque in last 5–10 % (or earlier for resonance/feedback).
+Landmark-Centric: detents at named values (center, octaves, ratios, vowels, frames).
+Center Notch: strong detent at 0 for bipolar params.
+Acceleration: fast=coarse, slow=fine. Press-to-fine halves step & torque.
+End-stop: torque rises last 3–5 % of arc.
+Torque model (implementation hint)
+
+T(θ, ω) = T0
+        + T_detents(θ)
+        + k_curve * normalize(|d x / d p|)
+        + k_guard * guard(p)
+        + k_end * endstop(p)
+        + k_vel * |ω|
+Detents = sum of Gaussians (width 6°/12°/20°). Clip normalize() at 95th percentile.
+15.2 Recommended feel (summary)
+LEVEL: Perceptual-Uniform; detents at −∞/−18/−12/−6/−3/0 dB; 270°.
+PAN: center notch + ±25/50/75/100 %; 180°.
+SENDS: 0/.1/.2/.3/.5; 270°.
+HPF/LPF: Perceptual-Uniform (log); LPF tiny guard near max; 270°.
+RES: Curve-Expressive + Guard-Rail from 0.75; detents 0/.2/.4/.6/.75/.85; heavy >.9.
+ADSR: Perceptual-Uniform (log landmarks: 1/3/5/10/20/50/100/300/600/1000/2000 ms); 270°.
+COMP_AMOUNT: Curve-Expressive (ramp .3→.7), detents 0/.15/.3/.5/.75/1; 180°.
+DRIVE: Curve-Expressive + guard top 15 %; 270°.
+BODY/AIR (±6 dB): center notch, detents −6/−3/−1/0/+1/+3/+6; 180°.
+MacroVA: shape landmarks (Tri/Saw/Square); unison count hard steps; spread soft.
+FM: ratio hard steps (360°); index Curve-Expressive; algo hard.
+Wavetable: frame 360° with light detents every 4 frames; bank hard steps.
+Chord: chord type hard (360°); spread soft; detune soft.
+Harmonics: partial count hard 1–16; inharmonicity Curve-Expressive (ramp >.6).
+Formant: vowels hard A/E/I/O/U (soft in-betweens); formant shift semitone detents (press-to-fine=cents).
+Tides: contour hard (sine/ramp/pulse) + soft mids.
+Rings/Elements: macros uniform with landmarks 0/.25/.5/.75/1; exciter hard; space/noise soft.
+DrumKit: kick tune landmarks (28/34/41/55/73/82/110 Hz), decay logs; hat/snare mix soft; choke event emits one sharp click.
+Per-engine inserts & buses: see §11 & §13 haptics (Curve-Expressive for feedback; landmark sync steps for delay time; freeze toggle click).
+(A machine-readable HapticsMap with arc/policy/detents per parameter is part of deliverables.)
+
+16) Metadata for UI/Automation
+Each engine (and DrumKit/FX modules) exposes:
+EngineID / FxID, DisplayName, ShortName, IsStereo (where applicable), CPUClass {Light|Med|Heavy|VHeavy}.
+Parameter descriptors: {id, name, unit, default, min, max, taper, isDiscrete, steps, group}.
+Suggested modulation destinations (bitmask).
+Haptics hints: policy {Uniform|Curve|Guard|Landmarks|CenterNotch}, arc (180°/270°/360°), detent list (values in engineering units).
+
+17) Presets & Scenes
+≥4 presets per engine (macros/extras, Channel Strip, per-engine inserts).
+≥4 kits for DrumKit (models, per-slot params, mapping, chokes, variations, strip, slot inserts, sends).
+Global scenes (3): Dry & Tight, Plate & Ping-Pong, Lush Texture (bus FX settings).
+Presets/scenes are versioned (JSON or compact binary). Presets store Quality mode.
+
+18) Testing & Acceptance
+Per engine
+Reset silence: RMS < −90 dBFS within 1 block.
+Lifecycle: noteOn → sustain → noteOff tails to −60 dBFS within documented time; no NaN/Inf; DC < −60 dBFS.
+Determinism: golden event stream + seed ⇒ bit-identical renders.
+Bounds: params at 0/1 stable; output never hard-clips > +1.0f (soft-clip OK).
+Spectral: alias energy target per §6 (FFT sweep C2→C8).
+CPU: DWT cycle counts within §7 budgets at representative polyphony (Light/Med ≥8 voices; Heavy ≥4).
+Insert FX
+No added latency; tails ≤2 s post-release; voice steal crossfade ≤5 ms.
+DrumKit
+Choke: OH choked by CH within 15 ms, click-free.
+Variation switch: ≤5 ms crossfade.
+Humanize: zero-mean timing variance; seeded reproducibility.
+Throughput: ≤120 k cycles/block at 8 concurrent hits.
+Bus & Master
+Reverb latency 0; Granular latency 10–40 ms documented; Limiter ≤1 ms.
+Clip safety: post-limiter ceiling −0.3 dBFS.
+CPU fits §19 roll-ups.
+Haptics
+All parameters carry haptics hints; detents matched; torque ramps bounded; end-stops ramp in last 3–5 % of arc.
+Golden audio
+3–5 short WAVs per engine & representative FX scenes (sustain, sweep, extremes) with CRCs.
+
+19) Performance Roll-Ups
+Per-voice inserts: ~1–2 k cycles/blk each; two inserts ≤3 k added worst-case.
+Bus A Reverb: ≤120 k; RAM ~0.5–1.0 MB (prefer on-chip).
+Bus B Granular: 150–250 k; RAM 11–35 MB (external).
+Bus C Delay/Chorus: ≤80 k; RAM in external.
+Master (incl. limiter): ≤50 k.
+Profiles
+Voice-Centric: 24 voices, light inserts, Reverb Normal, Delay off, Texture light → ≈55–65 % total.
+Texture-Centric: 8–10 voices, richer inserts, Reverb High, Texture Medium, Delay on → ≈70–80 %. Global Quality switch downshifts bus FX first (granular density, reverb taps) before reducing voices.
+
+20) Deliverables
+C++ sources
+Engines (one class each), DrumModels (one class each), DrumKit, Channel Strip, Insert FX modules, Bus FX modules, Master modules, shared DSP utils (BLEP, SVF, envelopes, interpolation, RNG).
+Headers
+Engine/FX interfaces, parameter IDs/enums, metadata accessors.
+Test harness
+Offline renderer to emit golden WAVs; spectral/bounds tests; DWT cycle stats; scene renders.
+Preset pack
+Engine presets, DrumKit kits, Global scenes (JSON/compact binary), versioned.
+Docs (2–4 pages)
+Engine/FX list, params, defaults, CPU/mem table, known limits.
+Haptics map
+Machine-readable JSON of arc/policy/detents per parameter.
+Kit mapping
+Default 26-key tables (3 presets) + mapping schema.
+
+21) Licensing & Attribution
+MIT-compatible only (no GPL).
+Include Mutable attribution/LICENSE in source and “About”.
+
+22) Acceptance Checklist
+Compiles clean (-O2, C++17); no RT warnings.
+Unit, spectral, CPU, and haptics tests pass.
+Metadata & haptics hints present for every parameter.
+Presets/scenes load; golden renders CRC-match.
+DrumKit choke/variation/humanize verified.
+Bus/Granular latency documented; limiter ceiling enforced.
+LICENSE/attribution included.
+
+Appendix A — Default Ranges & Tapers (reference)
+HPF 10–1000 Hz (log); LPF 200 Hz–18 kHz (log); RES 0–0.90 (linear, gain-comp).
+ADSR A: 0.5–100 ms, D: 5–2000 ms, S: 0–1, R: 10–3000 ms (log times).
+COMP 0..1; DRIVE 0..1; BODY/AIR ±6 dB.
+Unison spread VA 0–20 c; WT 0–12 c.
+Additive partials 1–16; Wavetable frames 0–63; Banks 0–3.
+
+Appendix B — Default 26-Key Drum Mapping (GM-ish)
+C: Kick1, C#: Rim, D: Snare1, D#: Clap, E: Snare2, F: Tom1, F#: ClosedHat, G: Tom2, G#: OpenHat, A: Tom3, A#: Crash, B: Ride. Remaining keys map to slot variations (Kick2–4, Snare3–4, alt hats, etc.). Fully editable.
+
+Appendix C — Parameter ID Canon
+
+PITCH, FINE, LEVEL,
+HARMONICS, TIMBRE, MORPH, EXTRA1, EXTRA2,
+HPF_CUTOFF, LPF_CUTOFF, LPF_RES, FLT_KEYTRACK,
+FLT_ENV_AMT, FLT_ATTACK, FLT_DECAY, FLT_SUSTAIN, FLT_RELEASE,
+COMP_AMOUNT, PUNCH, DRIVE, DRIVE_TONE, BODY, AIR,
+STRIP_ENABLE, STRIP_MODE,
+SEND_A, SEND_B, SEND_C,
+PAN,
+
+// Engine-specific examples
+UNISON_COUNT, UNISON_SPREAD, SUB_LEVEL, NOISE_MIX, SYNC_DEPTH,
+ALGO, BRIGHT_TILT, FIXED_MOD,
+FOLD_MODE, POST_LP,
+VOICES, SOURCE, STRUM_MS,
+PARTIAL_COUNT, DECAY_EXP, INHARMONICITY, EVEN_ODD_BIAS, BANDLIMIT_MODE,
+VOWEL, BANDWIDTH, BREATH, FORMANT_SHIFT, GLOTTAL_SHAPE,
+CONTOUR, SLOPE, UNISON, CHAOS, LFO_MODE,
+STRUCTURE, BRIGHTNESS, POSITION, EXCITER, DAMPING, SPACE_MIX, STEREO,
+GEOMETRY, ENERGY, EXCITER_BAL, SPACE, NOISE_COLOR,
+
+// Per-voice Insert FX
+FX_CHORUS_RATE, FX_CHORUS_DEPTH, FX_CHORUS_VOICES, FX_CHORUS_MIX,
+FX_FLANGE_RATE, FX_FLANGE_DEPTH, FX_FLANGE_FEEDBACK, FX_FLANGE_MANUAL, FX_FLANGE_MIX,
+FX_PHASER_STAGES, FX_PHASER_RATE, FX_PHASER_DEPTH, FX_PHASER_FEEDBACK, FX_PHASER_MIX,
+FX_TREM_RATE, FX_TREM_DEPTH, FX_TREM_SHAPE, FX_TREM_STEREO, FX_TREM_MIX,
+FX_CRUSH_BITS, FX_CRUSH_SRDIV, FX_CRUSH_FILTER, FX_CRUSH_MIX,
+FX_MINIDLY_TIME, FX_MINIDLY_FB, FX_MINIDLY_TONE, FX_MINIDLY_MIX,
+
+// Bus FX
+BUS_REV_PREDELAY, BUS_REV_RT60, BUS_REV_SIZE, BUS_REV_HFDAMP, BUS_REV_LOCUT, BUS_REV_MOD, BUS_REV_MIX,
+BUS_GRAN_DENSITY, BUS_GRAN_SIZE, BUS_GRAN_PITCH, BUS_GRAN_SPRAY, BUS_GRAN_FB, BUS_GRAN_DIFF, BUS_GRAN_FREEZE, BUS_GRAN_MIX,
+BUS_DLY_TIME_L, BUS_DLY_TIME_R, BUS_DLY_SYNC, BUS_DLY_FB, BUS_DLY_TONE, BUS_DLY_XFEED, BUS_DLY_MIX,
+BUS_EQ_LOW, BUS_EQ_HIGH, BUS_SAT_AMT,
+
+// Master
+MASTER_COMP_THRESH, MASTER_COMP_RATIO, MASTER_COMP_ATTACK, MASTER_COMP_RELEASE, MASTER_COMP_MIX,
+MASTER_TONE_LOW, MASTER_TONE_HIGH, MASTER_ST_WIDTH, MASTER_ST_TILT,
+MASTER_LIM_CEILING, MASTER_LIM_RELEASE

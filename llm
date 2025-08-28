@@ -1,0 +1,39 @@
+#!/usr/bin/env python3
+"""
+Simple wrapper for Local LLM Tool
+Usage: 
+  echo "your prompt" | ./llm
+  ./llm --prompt "your prompt" --model qwen2.5:32b
+"""
+
+import sys
+import os
+import subprocess
+
+# Add the path to the local_llm_tool.py
+script_dir = os.path.dirname(os.path.abspath(__file__))
+tool_path = os.path.join(script_dir, "local_llm_tool.py")
+
+# Default model preference (you can change this)
+DEFAULT_MODEL = "qwen2.5-coder:7b"
+
+def main():
+    # If no arguments provided and stdin has data, use simple mode
+    if len(sys.argv) == 1 and not sys.stdin.isatty():
+        # Simple pipe mode: echo "prompt" | ./llm
+        cmd = [sys.executable, tool_path, "--model", DEFAULT_MODEL]
+        subprocess.run(cmd)
+        return
+    
+    # If arguments provided, pass them through
+    args = sys.argv[1:]
+    
+    # If no model specified, add default
+    if "--model" not in args:
+        args = ["--model", DEFAULT_MODEL] + args
+    
+    cmd = [sys.executable, tool_path] + args
+    subprocess.run(cmd)
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,456 @@
+# ether Portable Synthesizer - UI/UX Design Document
+
+## Design Philosophy
+
+The ether user interface prioritizes **physical control over touch manipulation**, with the smart knob serving as the primary parameter control method. The touch screen functions as a **selection and navigation interface**, while the smart knob provides **precise, haptic-guided parameter adjustment**.
+
+### Core Principles
+
+- **Smart Knob Primary**: Touch selects, smart knob controls with haptic feedback
+- **Grid-Based Screens**: 8-10 functions max per screen, clear selection targets
+- **Icon-Driven Interface**: Comprehensive iconography for instant recognition
+- **Gesture Minimalism**: Primarily swipe navigation, minimal complex touch interactions
+- **Color-Coded Organization**: ROYGBIV + Grey system provides instant visual recognition
+- **Performance Ready**: All critical functions accessible without looking at screen
+
+## Visual Design Language
+
+### Color Palette
+
+**8-Instrument Color System (ROYGBIV + Grey)**:
+```
+Instrument 1: #FF0000 (Red)      - Bold, energetic
+Instrument 2: #FF8000 (Orange)   - Warm, dynamic  
+Instrument 3: #FFFF00 (Yellow)   - Bright, attention
+Instrument 4: #00FF00 (Green)    - Natural, balanced
+Instrument 5: #0080FF (Blue)     - Cool, stable
+Instrument 6: #4000FF (Indigo)   - Deep, mysterious
+Instrument 7: #8000FF (Violet)   - Creative, expressive
+Instrument 8: #808080 (Grey)     - Neutral, utility
+```
+
+**UI Accent Colors**:
+```
+Background:     #1A1A1A (Dark grey)
+Grid Lines:     #404040 (Medium grey)
+Text Primary:   #FFFFFF (White)
+Text Secondary: #B0B0B0 (Light grey)
+Selected:       #00FFFF (Cyan border)
+Active:         #FFFFFF (White border)
+Disabled:       #404040 (Dark grey)
+```
+
+### Typography
+
+**Primary Font**: SF Pro / Roboto Condensed (space-efficient)
+- **Function Labels**: 12px, Medium weight
+- **Value Display**: 14px, Bold weight (smart knob target)
+- **Small Labels**: 10px, Regular weight
+- **Icons**: 24px minimum touch targets
+
+### Screen Grid System
+
+**4.58" Display (960×320 landscape) - Function Grid Layout**:
+```
+┌─────────────────────────────────────────────────────┐
+│ Sidebar │        Main Function Grid                 │
+│  120px  │              840px                        │
+│         │  ┌─────┬─────┬─────┬─────┬─────┐          │
+│         │  │ F1  │ F2  │ F3  │ F4  │ F5  │          │
+│         │  │     │     │     │     │     │          │
+│         │  ├─────┼─────┼─────┼─────┼─────┤          │
+│         │  │ F6  │ F7  │ F8  │ F9  │ F10 │          │
+│         │  │     │     │     │     │     │          │
+│         │  └─────┴─────┴─────┴─────┴─────┘          │
+│         │                                          │
+│         │  [Smart Knob: Selected Function]         │
+└─────────────────────────────────────────────────────┘
+
+Function Grid: 5×2 = 10 functions maximum per screen
+Touch Target: 168×128px per function (comfortable finger size)
+```
+
+## Interaction Model
+
+### Primary Control Flow
+```
+1. TOUCH: Select function on grid
+   ↓
+2. Function highlights with cyan border
+   ↓  
+3. SMART KNOB: Adjust parameter with haptic feedback
+   ↓
+4. Real-time audio response + visual feedback
+   ↓
+5. TOUCH: Select next function OR swipe to new screen
+```
+
+### Smart Knob Behavior
+**Context-Sensitive Haptics**:
+```
+CONTINUOUS: Filter cutoff, volume - smooth rotation
+DETENTS: Pattern selection, BPM - click stops  
+SPRING: Pitch bend - return to center
+MAGNETIC: Note selection - snap to semitones
+TEXTURE: Distortion amount - rough feel
+```
+
+**Value Display**:
+- **Large numerical display** appears at bottom during knob adjustment
+- **Parameter name** shown clearly
+- **Range indicators** (min/max values)
+- **Unit labels** (Hz, %, dB, etc.)
+
+### Navigation Gestures
+```
+SWIPE LEFT/RIGHT: Change screen within mode
+SWIPE UP/DOWN: Change mode
+TAP FUNCTION: Select for smart knob control
+TAP SIDEBAR: Switch instrument/utility
+LONG PRESS: Context menu (copy/paste/reset)
+```
+
+## Comprehensive Icon System
+
+### Synthesis Icons
+```
+🎵 OSCILLATORS:
+├── 🌊 Sine Wave
+├── ⚡ Sawtooth  
+├── ⬜ Square Wave
+├── 📐 Triangle
+├── 🌪️ Noise
+└── 📊 Wavetable
+
+🎛️ FILTERS:
+├── ↘️ Low Pass
+├── ↗️ High Pass  
+├── ⬌ Band Pass
+├── ◯ Notch
+├── 🎪 Comb
+└── 🔥 Distortion
+
+📈 ENVELOPES:
+├── ⚡ Fast Attack
+├── 🌊 Slow Attack
+├── 📈 Linear
+├── 📉 Exponential
+├── 🔄 Loop
+└── 🎯 One-Shot
+
+🔄 LFO SHAPES:
+├── 🌊 Sine
+├── 📐 Triangle
+├── ⬜ Square
+├── ⚡ Sawtooth
+├── 🎲 Random
+└── 📊 Sample & Hold
+```
+
+### Sequencer Icons
+```
+🎼 PATTERNS:
+├── ● Step Active
+├── ○ Step Inactive  
+├── ◐ Step Accent
+├── ▲ Velocity High
+├── ▼ Velocity Low
+└── ↗ Progressive FX
+
+🎵 EUCLIDEAN:
+├── ●○●○ 2/4 Pattern
+├── ●○○●○○ 2/6 Pattern
+├── ●○●○●○○ 3/7 Pattern
+└── 🔄 Rotation
+
+⚡ M8-STYLE FX:
+├── ↗ Volume Up
+├── ↘ Volume Down
+├── 🌊 Filter Sweep
+├── 🎯 Pitch Rise
+├── ↔️ Pan Movement
+└── 🔄 Repeat Count
+```
+
+### Effects Icons
+```
+🎵 TIME EFFECTS:
+├── 🏛️ Reverb (Hall)
+├── 🌌 Reverb (Space)
+├── 🔁 Delay
+├── 👥 Chorus
+├── 🌪️ Flanger
+└── 📳 Phaser
+
+🔥 DISTORTION:
+├── ⚡ Drive
+├── 📐 Clip
+├── 🌊 Saturation
+├── 💎 Bitcrush
+├── 🎪 Ring Mod
+└── 🌀 Tube
+
+🎛️ DYNAMICS:
+├── 🎯 Compressor
+├── 🚪 Gate
+├── 📊 Limiter
+├── 🌊 Expander
+└── 🔇 Duck
+```
+
+### Chord Mode Icons
+```
+🎹 CHORD TYPES:
+├── ☀️ Major
+├── 🌙 Minor
+├── 7️⃣ Seventh
+├── 🔺 Augmented
+├── 🔻 Diminished
+├── 🔄 Suspended
+└── 🎯 Custom
+
+🎵 VOICINGS:
+├── 📊 Root Position
+├── 🔄 1st Inversion
+├── 🔃 2nd Inversion
+├── 📈 Wide Spread
+├── 📉 Close Voicing
+└── 🎪 Drop Voicing
+```
+
+## Mode Architecture
+
+### Primary Modes (7 Total)
+
+```
+🎹 INSTRUMENT MODE (4 screens)
+├── Screen 1: 🎵 Engine Parameters (8 functions)
+├── Screen 2: 🎛️ Filter & Envelope (8 functions)
+├── Screen 3: 🔥 Effects Chain (8 functions)
+└── Screen 4: 🔄 Modulation Matrix (10 functions)
+
+🎼 SEQUENCER MODE (3 screens)  
+├── Screen 1: 📊 Timeline Overview (6 functions)
+├── Screen 2: ●○● Euclidean Programming (8 functions)
+└── Screen 3: ⚡ M8-Style FX Editor (10 functions)
+
+🎹 CHORD MODE (3 screens)
+├── Screen 1: 🎵 Chord Assignment (8 functions)
+├── Screen 2: 📊 Harmonic Distribution (8 functions)
+└── Screen 3: 🎪 Arpeggio Controls (6 functions)
+
+📼 TAPE MODE (3 screens)
+├── Screen 1: 🎛️ 4-Track Mixer (8 functions)
+├── Screen 2: ⏯️ Transport & Timeline (6 functions)
+└── Screen 3: ✂️ Edit Operations (8 functions)
+
+🔄 MODULATION MODE (2 screens)
+├── Screen 1: 🌊 LFO Configuration (8 functions)
+└── Screen 2: 🎯 Modulation Assignments (10 functions)
+
+⚡ PUNCH FX MODE (1 screen)
+└── Screen 1: 🎪 Real-time Performance FX (8 functions)
+
+📁 PROJECT MODE (2 screens)
+├── Screen 1: ⚙️ Song Settings (6 functions)
+└── Screen 2: 💾 File Management (8 functions)
+```
+
+## Screen Layout Examples
+
+### Instrument Mode - Screen 1: Engine Parameters
+```
+┌─ INSTRUMENT 1 (RED) ─ ENGINE ──────────────────────┐
+│                                                   │
+│ ┌─────┬─────┬─────┬─────┬─────┐                   │
+│ │ 🌊  │ ⚡  │ 🌊  │ 📐  │ 🎵  │                   │
+│ │OSC1 │OSC1 │OSC2 │OSC2 │ MIX │                   │
+│ │WAVE │FREQ │WAVE │FREQ │     │                   │
+│ │Sine │+0ST │Sqr  │-12ST│ 65% │                   │
+│ └─────┴─────┴─────┴─────┴─────┘                   │
+│ ┌─────┬─────┬─────┬─────┬─────┐                   │
+│ │ 🌪️  │ 📊  │ 🎯  │ 🔄  │     │                   │
+│ │NOISE│WTBL │DETUN│SYNC │     │                   │
+│ │     │     │     │     │     │                   │
+│ │ 25% │Pad01│ +3¢ │ OFF │     │                   │
+│ └─────┴─────┴─────┴─────┴─────┘                   │
+│                                                   │
+│ 🎛️ Smart Knob: OSC1 Wave                         │
+│    ┌─────────●─────────┐                         │
+│    Sine              Square                       │
+└───────────────────────────────────────────────────┘
+```
+
+**Touch Interaction**:
+- **Tap OSC1 WAVE** → Selects for smart knob control
+- **Cyan border** appears around selected function
+- **Smart knob** cycles through waveforms with detent haptics
+- **Icon updates** in real-time as parameter changes
+
+### Sequencer Mode - Screen 2: Euclidean Programming
+```
+┌─ SEQUENCER ─ EUCLIDEAN ────────────────────────────┐
+│ Pattern: Red Bass                                 │
+│ ┌─────┬─────┬─────┬─────┬─────┐                   │
+│ │ ●○● │ 🔄  │ 📊  │ ⚡  │ 🎯  │                   │
+│ │HITS │ROTAT│VELOC│ACCNT│PROB │                   │
+│ │     │     │     │     │     │                   │
+│ │  7  │  3  │ 80% │ 4,8 │100% │                   │
+│ └─────┴─────┴─────┴─────┴─────┘                   │
+│ ┌─────┬─────┬─────┬─────┬─────┐                   │
+│ │ ↗   │ 🔄  │ ⏰  │ 🎪  │     │                   │
+│ │ FX  │COPY │TIMNG│SWING│     │                   │
+│ │     │     │     │     │     │                   │
+│ │Step3│PTRN │16th │ 15% │     │                   │
+│ └─────┴─────┴─────┴─────┴─────┘                   │
+│                                                   │
+│ ●○●○●○○●○●○●○○●○                                 │
+│ 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6                 │
+│     ↗ ↗ ↗     (FX arrows show progression)        │
+│                                                   │
+│ 🎛️ Smart Knob: Euclidean Hits                    │
+│    ┌───●───┐ 7 hits / 16 steps                   │
+└───────────────────────────────────────────────────┘
+```
+
+### M8-Style FX Editor (Full Screen)
+```
+┌─ FX SETUP: Step 3 ─────────────────────────────────┐
+│                                                   │
+│ ┌─────┬─────┬─────┬─────┬─────┐                   │
+│ │ 📊  │ 🎛️  │ ⚡  │ ↔️  │ 🏛️  │                   │
+│ │VOLUM│FILTR│PITCH│ PAN │REVERB│                   │
+│ │     │ ●   │     │     │     │                   │
+│ │     │     │     │     │     │                   │
+│ └─────┴─────┴─────┴─────┴─────┘                   │
+│ ┌─────┬─────┬─────┬─────┬─────┐                   │
+│ │ ↗   │ ↘   │ 🔄  │ 4️⃣   │ ⏰  │                   │
+│ │ UP  │DOWN │PING │REPx4│STEP │                   │
+│ │ ●   │     │     │ ●   │ ●   │                   │
+│ │     │     │     │     │     │                   │
+│ └─────┴─────┴─────┴─────┴─────┘                   │
+│                                                   │
+│ Preview: 1000Hz → 1200Hz → 1400Hz → 1600Hz        │
+│                                                   │
+│ 🎛️ Smart Knob: Filter Amount                     │
+│    ┌─────●─────┐ +200Hz per step                  │
+│    0Hz      500Hz                                 │
+└───────────────────────────────────────────────────┘
+```
+
+## Persistent Sidebar
+
+### Instrument Sidebar (Always Visible)
+```
+┌─ INST ─┐
+│   ●    │ Red (Selected)
+│   ○    │ Orange  
+│   ○    │ Yellow
+│   ○    │ Green
+│   ○    │ Blue
+│   ○    │ Indigo
+│   ○    │ Violet
+│   ○    │ Grey
+├────────┤
+│   🎵   │ Master
+│   ●    │ Record
+│   ►    │ Play/Stop
+│   🎛️   │ Mode
+└────────┘
+```
+
+**Functions**:
+- **Tap instrument color** → Switch focus, screen updates
+- **Long press** → Quick mute/solo
+- **Current instrument** highlighted in UI
+
+## Physical Control Integration
+
+### 4 Assignable Encoders
+```
+┌─────────┬─────────┬─────────┬─────────┐
+│ Filter  │ Volume  │ Reverb  │ Drive   │  ← OLED Labels
+│ Cutoff  │  Mix    │  Send   │ Amount  │
+│  ●      │   ●     │    ●    │    ●    │  ← RGB LED Rings
+└─────────┴─────────┴─────────┴─────────┘
+```
+
+**Assignment Workflow**:
+1. **Touch function** on main screen
+2. **Double-click encoder** to assign globally  
+3. **Encoder LED** shows instrument color
+4. **OLED updates** with parameter name
+5. **Assignment persists** across all modes/screens
+
+### Smart Knob States
+```
+PARAMETER CONTROL: Active function from touch selection
+NAVIGATION: When no function selected - browse menus
+PRECISION MODE: Double-click for fine adjustment
+DISABLED: When in text entry or file browser
+```
+
+## Animation System
+
+### Minimal Animation Strategy
+```
+FUNCTION SELECTION: Instant cyan border (no fade)
+VALUE CHANGES: Number counter animation (100ms)
+SCREEN TRANSITIONS: Slide (200ms) for mode, instant for functions
+ICON FEEDBACK: Scale pulse on parameter change (150ms)
+LED FEEDBACK: Color transitions (300ms ease)
+PLAYBACK: Step indicator moves smoothly (60fps)
+```
+
+### Visual Feedback Priority
+```
+1. SMART KNOB VALUE: Large, clear numerical display
+2. SELECTED FUNCTION: Cyan border, no ambiguity
+3. INSTRUMENT COLOR: Persistent visual identity
+4. PLAYBACK STATE: Clear playhead indicators
+5. PARAMETER CHANGES: Icon updates, value animations
+```
+
+## Performance Optimization
+
+### Rendering Strategy
+```
+STATIC ELEMENTS: Icons and grid layout cached
+DYNAMIC ELEMENTS: Only values and selection states update
+FRAME BUDGET: 16ms target, 60fps for smooth knob response
+TOUCH RESPONSE: <50ms from touch to visual feedback
+SMART KNOB: <10ms from rotation to value change
+```
+
+### Icon Optimization
+```
+VECTOR ICONS: SVG format for crisp scaling
+ICON ATLAS: Single texture for performance
+SIZE VARIANTS: 16px, 24px, 32px versions
+HIGH CONTRAST: Visible in all lighting conditions
+MONOCHROME: Work with instrument color overlays
+```
+
+## Accessibility
+
+### Visual Accessibility
+```
+ICON + TEXT: All functions have both icon and label
+HIGH CONTRAST: 4.5:1 minimum contrast ratio
+LARGE TARGETS: 168×128px minimum touch areas
+CLEAR HIERARCHY: Selected state always obvious
+COLORBLIND SAFE: Icons work without color
+```
+
+### Physical Accessibility
+```
+SMART KNOB PRIMARY: Precision control without fine touch
+ENCODER BACKUP: All critical functions assignable
+HAPTIC FEEDBACK: Feel parameter changes
+BUTTON FALLBACKS: Key controls for essential functions
+MUSCLE MEMORY: Consistent layouts enable blind operation
+```
+
+---
+
+*This UI/UX design document defines a smart knob-centric interface architecture for the ether portable synthesizer, prioritizing physical control with touch-based selection for professional music creation workflows.*

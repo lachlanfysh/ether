@@ -1,0 +1,157 @@
+# Feature Requirements: Tape Squashing and Latchable Velocity Modulation
+
+## Tape Squashing Feature
+
+### Overview
+The tape squashing feature allows users to commit ("crush") selected pattern regions from one or more tracks into audio samples, which can then be played back on the sampler track. This process is destructive - the original sequenced data is permanently replaced with the rendered audio.
+
+### User Interface Requirements
+
+**Pattern Selection**
+- User must be able to select a rectangular region spanning multiple tracks and pattern steps
+- Selection should be visual with clear start/end boundaries highlighted
+- Minimum selection: 1 step on 1 track
+- Maximum selection: any number of consecutive steps across any number of tracks
+- Selection can span partial or complete patterns - does not need to align with pattern boundaries
+
+**Crush to Tape Operation**
+- Primary action button/menu item labeled "Crush to Tape" (or similar)
+- Upon activation, system renders the selected region in real-time, capturing:
+  - All instrument sounds within the selection
+  - All effects processing applied to those tracks
+  - All parameter modulation (including velocity modulation) active during playback
+  - Current instrument settings at time of crushing (not historical locked states)
+- Rendered audio length matches exactly the time duration of the selected steps
+- Audio format: 44.1kHz/16-bit (or project sample rate/bit depth)
+
+### Processing Behavior
+
+**Audio Rendering**
+- System plays back the selected region internally while recording the output
+- All tracks within selection are mixed down to stereo audio
+- Effects chains, EQ, and any other processing are baked into the final audio
+- No real-time effects or modulation can be applied during the crush process itself
+
+**Data Replacement**
+- After successful rendering, all sequenced data within the selected region is permanently deleted
+- The rendered audio sample is automatically loaded into the next available sampler track slot
+- If no sampler track slots are available, user must choose which slot to overwrite or cancel operation
+- Original instrument assignments, effects settings, and parameter locks within the crushed region are lost forever
+
+**Undo/Recovery**
+- No undo functionality - operation is permanently destructive
+- Recommend implementing a confirmation dialog before crushing
+- Consider auto-saving project before crush operations
+
+### Sampler Track Integration
+
+**Sample Playback**
+- Crushed audio appears as a new sample in the sampler track
+- Sample can be triggered on any step like any other sample
+- Standard sampler playback controls apply: pitch, start/end points, reverse, etc.
+- Each crushed sample gets a unique name (auto-generated or user-definable)
+
+**Multi-Sample Capability**
+- Sampler track supports multiple samples simultaneously
+- Each sample can be assigned to different velocity ranges, pitch ranges, or step assignments
+- Multiple crushed samples can be layered or sequenced independently
+
+## Latchable Velocity Modulation Feature
+
+### Overview
+Velocity values are captured and locked per-step during pattern entry. Velocity can be latched to modulate any instrument parameter, with modulation being relative to the current parameter value rather than absolute replacement.
+
+### Parameter Latch Interface
+
+**Visual Indicators**
+- Every adjustable parameter in the instrument interface displays a small "V" icon
+- V icon states:
+  - Inactive (grayed out): Parameter not affected by velocity
+  - Active (highlighted): Parameter modulated by velocity
+  - Visual indication of modulation polarity (+ for positive, - for negative scaling)
+
+**Latch Activation**
+- Clicking/tapping the V icon toggles velocity modulation for that parameter
+- While adjusting any parameter, the associated V icon becomes highlighted/accessible
+- Users can toggle velocity modulation on/off for the currently selected parameter without menu diving
+
+### Velocity Capture Behavior
+
+**Step Programming**
+- When entering a step (note trigger), current velocity value is captured and permanently stored with that step
+- Velocity range: 0-127 (standard MIDI velocity range)
+- Each step maintains its own velocity value independent of global instrument settings
+- Re-triggering a step overwrites the velocity value for that step only
+
+**Default Velocity**
+- New steps default to velocity 100 (or user-configurable default)
+- Velocity can be adjusted before or after step entry
+- Visual feedback shows current velocity value during step programming
+
+### Modulation Calculation
+
+**Relative Modulation**
+- Velocity modulation is always relative to the current parameter value
+- Formula: Final_Value = Base_Parameter_Value + (Velocity_Scaling × Velocity_Amount)
+- Base parameter value updates globally when instrument is edited
+- Velocity scaling and polarity are per-parameter settings
+
+**Scaling and Range**
+- Each latched parameter has configurable modulation depth (0-200% typical range)
+- Positive scaling: Higher velocity = higher parameter value
+- Negative scaling: Higher velocity = lower parameter value
+- Modulation depth of 100% means velocity 127 doubles the parameter effect, velocity 0 removes it entirely
+- Final parameter values are clamped to valid ranges for each parameter type
+
+**Volume Special Case**
+- Volume can be latched like any other parameter
+- Volume latching can be disabled entirely if desired (for scenarios where velocity should only affect tone)
+- When volume latching is disabled, velocity 0 steps still trigger (silent note issue avoided)
+
+### Parameter Interaction Examples
+
+**Filter Cutoff with Positive Scaling**
+- Base cutoff: 50%
+- Velocity modulation: +100% depth
+- Step with velocity 127: Plays at 100% cutoff (50% + 50%)
+- Step with velocity 64: Plays at 75% cutoff (50% + 25%)
+- Step with velocity 0: Plays at 50% cutoff (base value only)
+
+**Distortion with Negative Scaling**
+- Base distortion: 60%
+- Velocity modulation: -75% depth  
+- Step with velocity 127: Plays at 15% distortion (60% - 45%)
+- Step with velocity 0: Plays at 60% distortion (base value only)
+
+### Global vs Per-Step Behavior
+
+**Global Instrument Changes**
+- Adjusting base instrument parameters affects all steps using that instrument
+- Velocity modulation relationships are preserved
+- Example: Increasing base filter cutoff brightens all steps, but velocity-based variation remains proportional
+
+**Per-Step Velocity Persistence**  
+- Velocity values captured during programming remain with each step permanently
+- Changing instrument parameters doesn't affect stored velocity values
+- Velocity can be edited per-step after initial programming
+
+### Configuration and Setup
+
+**Per-Instrument Settings**
+- Each instrument can have different velocity modulation mappings
+- Modulation depth and polarity settings are saved with instrument presets
+- Multiple parameters can be velocity-modulated simultaneously on the same instrument
+
+**User Interface Flow**
+1. Select instrument parameter to adjust
+2. V icon for that parameter becomes highlighted/accessible  
+3. Toggle V icon to enable/disable velocity modulation
+4. Set modulation depth and polarity (separate interface)
+5. Program steps - velocity values are captured automatically
+6. Velocity modulation is applied during playback based on stored per-step velocity and current parameter settings
+
+### Performance Considerations
+- Velocity modulation calculations happen in real-time during playback
+- No pre-computation or caching required
+- Parameter value changes update immediately across all affected steps
+- Minimal CPU overhead for modulation calculations

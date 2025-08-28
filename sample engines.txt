@@ -1,0 +1,273 @@
+Sampler Engines — Complete Requirements (Kit & Slicer)
+0) Context & Assumptions
+Firmware audio rate 48 kHz (or 44.1 kHz), block size 64/128 samples, 32-bit float internal mix.
+File storage: internal/SD; FAT/exFAT; path strings UTF-8.
+UI: 960×320, borderless overlays; SmartKnob primary parameter control; 3 assignable encoders (E1–E3); hardware Play/Record.
+Pattern system already in place: per-instrument patterns (16-step grid), drum view supports many lanes.
+
+1) Shared Sampler Infrastructure (used by Kit & Slicer)
+1.1 File I/O & Formats
+Containers: WAV/AIFF PCM 16/24-bit; mono or stereo.
+Metadata: read root note, tempo (BWF), loop points, cue markers (slice hints).
+Decode path: background decode to interleaved 16-bit (or 24-bit if headroom required), little-endian; no heap in audio callback.
+1.2 Streaming & Buffers
+Hybrid: RAM for short files (<1 MB), disk streaming for long files (double ring buffer per channel).
+Read-ahead: 64–256 ms configurable; underrun → fast 2 ms fade-out and UI warning.
+LRU cache for hot samples; target cache ceiling 32–64 MB (configurable).
+1.3 Resampling & Pitch
+Interpolation: 4-point Lagrange (default), 6-point Hermite (HQ mode per engine).
+Pitch: semitones ±24, cents ±100; master tune ±100 cents per engine.
+Time modes: Repitch always available; Slice-stretch (Slicer only); optional offline phase-vocoder (pre-analysis) if headroom allows.
+1.4 Voice Model & DSP Order
+Per-voice envelope: AHDSR (Kit offers “Fast” drum mode).
+Velocity curves (3): map to amp and filter by default.
+Per-voice strip (standardized across engines): Gain → HPF → LPF/Res → Drive → Compressor → Pan → Sends A/B/C → Output.
+1.5 Modulation (Destinations)
+Common: Start, Length, Fine-tune, Amp, LPF cutoff, Res, Pan, Pitch, Playback Rate.
+Slicer-specific: Slice Select, Marker Pos (coarse).
+Sources: LFO1–3, Random, Aftertouch, Velocity, Mod Wheel, E1–E3, SmartKnob (current parameter).
+1.6 RT-safety & Threads
+Audio thread only touches pre-allocated voice state; lock-free FIFOs for I/O.
+All disk/decoding on worker threads; parameter messages are lock-free ring or double-buffered.
+
+2) Engine A — SamplerKit (25 one-shots, MPC-style)
+2.1 Purpose
+25 pads mapped to the 25-key keyboard (leftmost = Pad 1).
+Ultra-low-latency one-shot playback for drums/perc/FX.
+2.2 Polyphony, Choke & Priority
+Max voices: target 64 (tunable).
+Per-pad poly 1–8; priority: LAST / HIGH-VEL / OLDEST.
+Choke groups: 8 (0 = none). “Cut Self” toggle (mono retrig with 1–2 ms x-fade).
+2.3 Per-Pad Parameters
+Sample: file id, channel (Mono-L/Mono-R/Stereo), Reverse.
+Start / End (0–100%), Offset (0–50 ms).
+Env: Attack / Hold / Decay / Release; Fast switch (sub-10 ms times).
+Pitch: ±24 st, ±100 cents; Root note (optional for pitched pads).
+Filter: LPF (20 Hz–20 kHz), Res (0–1).
+Velocity → Level (0–1), Pitch (±12 st), LPF (0–1).
+Pan −100…+100 %, Gain −24…+12 dB.
+Humanize: timing ±8 ms, velocity ±20 (bipolar).
+Mute/Solo, Choke group (0–8), FX sends A/B/C (0–1).
+Round-robin: Off/2/4 (alt sample cycling per pad).
+2.4 Engine-Level (Kit)
+Master Tune ±100 c; Swing 0–75 %; Quantize Off/1/8…1/32T.
+Global strip: HPF, LPF/Res, Drive, Comp, Body, Air (standard).
+Pad link: multi-edit across selection; Copy/Paste pad settings.
+Note Repeat: rate 1/8…1/64T, swing %, humanize %, Latch.
+2.5 Pattern Editor (Drum View)
+12 lanes visible with paging to reach pads 13–25.
+Per-step: gate, velocity, probability, ratchet ×1…×8, micro-nudge ±12 ticks.
+Accent lane (pattern-wide) → velocity boost.
+Record: real-time quantized overdub, step input, note repeat performance.
+2.6 UI — Sound Overlay (Kit)
+Top: 5×5 Pad Grid; color chips, load state, mute/solo badges.
+Pad Inspector (selected pad):
+Mini-waveform with Start/End handles and zero-cross snap.
+Per-pad controls (Pitch, Env, Filter, Pan/Gain, Sends, RR, Choke).
+Macro knobs (big 3): Pitch Macro, Filter Macro, Env Macro (labels change from H/T/M).
+Strip row: HPF/LPF/Res/Comp/Drive/Body/Air/Sends.
+Inserts (2): e.g., Transient Shaper, Chorus.
+Sample Browser for Kit: Scatter view (see § 4).
+2.7 SmartKnob (Kit)
+Pad Select: 25 hard detents.
+Start/End: soft-fine, micro-detents at zero-cross, strong detents at boundaries.
+Pitch (semi): hard detents; press-and-turn = cents (light detents).
+Filter Cutoff: log feel, more force near 20 kHz.
+Decay/Release: expo feel, extra friction near sub-20 ms.
+Choke Group: 0–8 hard detents.
+Sends: linear with notches at 0 and 0.5.
+2.8 Assignable Encoders (defaults)
+E1 Level (selected pad), E2 Decay, E3 LPF Cutoff. Press to reset to sensible defaults (0 dB, 250 ms, 12 kHz).
+
+3) Engine B — Slicer (up to 25 slices, stereo waveform)
+3.1 Purpose
+Load a loop/phrase; slice into up to 25 regions; map slices 1–25 to 25 keys; MPC-style play.
+3.2 Slicing & Editing
+Detection modes: Transient, Grid (1/4–1/16 incl. triplets), Manual.
+Tools: snap to zero-cross, pre-roll 1–10 ms, x-fade 0–10 ms at slice bounds, merge/split, reorder slices.
+Normalization: per-slice (peak to −1 dBFS) or global.
+Slice→Kit: export slices to SamplerKit pads (1:1 map).
+3.3 Playback Modes
+Per-slice: One-shot / Gate / Through (continues into next slice).
+Time: Repitch (default), Slice-stretch (tempo-safe without FFT), Offline Stretch (optional, pre-analysed PV).
+Loop: on/off, type fwd/ping-pong, loop x-fade.
+Chromatic Slice mode (hold key + SmartKnob): maps that slice across semitones.
+3.4 Per-Slice Parameters
+Start/End, Gain (−24…+12 dB), Pan, AHDR env, Pitch (±24 st, ±100 c), LPF/Res, Mode, Reverse, Sends A/B/C.
+Priority: LAST / OLDEST for internal steal.
+Link groups: play paired slices (e.g., transient + tail).
+3.5 Engine-Level (Slicer)
+Analysis: sensitivity, min slice length, transient window; auto-zero-cross (on/off).
+Quantize Off/1/8…1/32T; Swing 0–75 %.
+Follow actions: Next/Prev/Random/Stop with probability.
+Root BPM (from file or manual) for grid slicing and tempo-sync.
+3.6 UI — Sound Overlay (Slicer)
+Top half: stereo waveform (L above R), zoom/scroll, overview mini-map.
+Slice markers 1–25 with color chips; drag to move; double-tap toggle; long-press delete; toolbar for Split/Merge/Auto.
+Right inspector (selected slice): start/end, length, play mode, loop & x-fade, pitch, env, filter, gain/pan, sends.
+Macro knobs:
+HARMONICS → Sensitivity (Detect mode)
+TIMBRE → Slice X-Fade / Transient Tilt
+MORPH → Follow-Action Probability
+Inserts (2): e.g., Bitcrush, MicroDelay.
+Loop Browser button → folder-list overlay (see § 5).
+3.7 Pattern Editor
+Reuse Drum view; lanes labeled S1…S25; per-step params identical to Kit.
+3.8 SmartKnob (Slicer)
+Slice Select: 25 hard detents.
+Marker position: continuous with zero-cross micro-detents and neighbor-marker strong detents.
+Sensitivity: S-curve feel, more force near extremes.
+X-Fade: linear, small dead-zone near zero.
+Pitch: hard semitone detents; press for cents.
+Zoom: staged detents (full → 1/2 → 1/4 → 1/8 → 1/16).
+3.9 Assignable Encoders (defaults)
+E1 Slice Select (1–25), E2 Start (coarse/fine with press), E3 End (coarse/fine with press).
+
+4) Scatter Browser (Kit only) — Offline Analysis & Runtime UX
+Goal: swipe across a “cloud” of samples to audition instantly; heavy analysis runs only on user request, never on overlay open.
+4.1 Offline Analyzer (desktop/companion tool)
+Pipeline:
+Scan roots → manifest {path,size,mtime,xxhash64}; diff against DB.
+Decode new/changed files; trim leading/trailing silence (−60 dBFS).
+Features: MFCC mean/var, centroid/bandwidth/rolloff, flatness, chroma, attack time, transient density, RMS stats, roughness proxy.
+Categorize: drums/tonal/fx via logistic model + folder priors; subcats (kick/snare/hat…) via rules; confidence 0–1.
+Embed to 2D with UMAP (n_neighbors=30, min_dist=0.15, metric=cosine, random_state=42).
+First run: fit & save umap_model.pkl.
+Delta runs: if <15 % new/changed → transform only; else allow Full rebuild (layout may shift).
+Previews: 200–600 ms mono WAV @ 22.05 kHz from onset; peak-normalize to −1 dBFS; 10 ms fade-out.
+Export: sample_map.json, sample_index.sqlite, sample_features.parquet, previews/….
+Delta strategy: process only new/changed/deleted; keep normalization stats; identity id = xxhash64(path+size+contentHash).
+CLI/UX: “Tools → Rebuild Sample Map…” with Incremental/Full rebuild; never auto-run on UI entry.
+4.2 JSON consumed by the device (minimum)
+
+{
+  "version": 1,
+  "built_at_utc": "YYYY-MM-DDTHH:MM:SSZ",
+  "source_root": "/Samples",
+  "points": [
+    {
+      "id": "xxhash64",
+      "path": "drums/kicks/kick_07.wav",
+      "x": -3.41, "y": 1.23,
+      "family": "drums", "subcat": "kicks", "conf": 0.86,
+      "duration_ms": 412, "sr": 48000,
+      "preview": "previews/kick_07_22050.wav",
+      "rms": -17.3, "peak_db": -0.4
+    }
+  ]
+}
+4.3 Scatter Overlay (UI)
+Canvas: 2D scatter of points; color by family/subcat.
+Hover/drag: stream preview immediately; one-finger (or mouse) skate to audition.
+Filters: family/subcat; optional “Find similar” (k-NN in features).
+Assign: tap or right-click → “Assign to Pad… (1–25)” (immediate per-pad load).
+No analysis on open; if JSON missing → show “Rebuild Sample Map” action (do not auto-run).
+
+5) Loop Browser (Slicer) — Standard Folder List
+Classic two-pane folder/file list, no auto-analysis. Optional Loop Indexer can enrich rows, but is never required.
+5.1 UI (Overlay)
+Path bar; Left: folders (.., Recent, Favorites, children).
+Right: virtualized file list (Name, Size, Duration).
+If Loop Indexer data present: show BPM / Key / Bars; sorting by these is instant; filter chips appear.
+5.2 Interaction
+Tap row → load loop into Slicer overlay (then run fast transient detect inside Slicer if needed).
+Row ▶ or SmartKnob press → audition (optionally Sync to Bar to start on next bar at project tempo; preview repitches to project BPM if known).
+Long-press row → context: Add to Favorites, Reveal in Storage, Slice→Kit, Tag…
+5.3 Optional Offline Loop Indexer
+Outputs: loop_index.sqlite/json, previews/ (bar-length, −1 dBFS, crossfaded).
+Extract: BPM (w/ confidence), Key (chroma), Bars/TimeSig, duration.
+Delta runs only new/changed; never auto-run.
+Browser consumes index if present; otherwise shows minimal fields and a “Run Loop Indexer” action.
+
+6) Integration & API (C++)
+6.1 Data Types
+
+struct SampleBuffer {
+  int sr; int channels; int16_t* data; size_t frames; bool streaming;
+  void* streamHandle; // if streaming from disk
+};
+
+struct AHDR { float a, h, d, r; bool fast; };
+
+struct Pad {
+  SampleBuffer* sample; float startNorm, endNorm, offsetMs;
+  float tuneSemi, tuneCents; AHDR env; float gain, pan;
+  float lpfHz, res; uint8_t chokeGroup; uint8_t poly; bool reverse;
+  uint8_t rrCount, rrIndex; float velToLevel, velToPitch, velToLPF;
+  float sendA, sendB, sendC;
+};
+
+struct Slice {
+  size_t startFrame, endFrame; bool loop; float loopXFadeMs;
+  float tuneSemi, tuneCents; AHDR env; float gain, pan;
+  float lpfHz, res; bool reverse; uint8_t mode; // OneShot/Gate/Through
+  float sendA, sendB, sendC;
+};
+6.2 Engines
+
+class SamplerKitEngine : public Engine {
+ public:
+  Pad pads[25];
+  VoiceAllocator voices; // per-pad poly & choke groups
+  void noteOn(int key, float vel) override;
+  void noteOff(int key) override;
+  void process(float* outL, float* outR, int nframes) override;
+  void setParam(int padId, ParamId id, float v) override;
+};
+
+class SamplerSlicerEngine : public Engine {
+ public:
+  SampleBuffer* source = nullptr;
+  Slice slices[25]; int sliceCount = 0;
+  void detectSlices(DetectMode mode, const DetectParams& p);
+  void noteOn(int key, float vel) override; // key→slice
+  void process(float* outL, float* outR, int nframes) override;
+  void setSliceParam(int idx, ParamId id, float v);
+};
+6.3 Parameter Conventions
+Namespaced IDs: kit.padN.* and slicer.sliceN.*; engine-level as kit.* / slicer.*.
+All time values in seconds (UI shows ms); frequency Hz; gains dB or 0–1 as appropriate.
+Boolean parameters 0/1.
+6.4 Performance Targets (H7 @ 600 MHz)
+Kit: 48 kHz, up to 64 voices, 4-pt interpolation, strip enabled → <40 % CPU typical.
+Slicer: 24–32 simultaneous slices, slice-stretch only (no realtime FFT) → <45 % CPU typical.
+Memory: hot cache ≤64 MB; streaming rings ≤2 MB per long file.
+
+7) Persistence
+Kit: save/load kits (pad → sample path + per-pad params), note repeat settings, macro mappings.
+Slicer: save/load slice maps (start/end, params), analysis metadata (if offline PV used).
+Both store engine presets and browser favorites lists; graceful handling of missing files (rows/pads flagged, engine stable).
+
+8) SmartKnob Feel (Summary)
+Discrete selectors (pad/slice/choke/mode): hard detents per item.
+Pitch (semi): hard detents; press for cents (light detents).
+Time/length/marker: continuous with zero-cross micro-detents and boundary hard stops.
+Filters/Envelopes: perceptual log/expo curves; increasing force near extremes.
+Zoom: staged detents.
+All detent counts/ranges exposed so firmware can change on a per-parameter basis.
+
+9) QA & Edge Cases
+Denormals: FTZ for near-silence envelopes.
+Clicks: minimum 1–2 ms ramps at start/end if A/R are zero.
+Slice spacing: enforce ≥2 ms; honor zero-cross (if enabled).
+Streaming underruns: mute w/ fast fade; sticky UI indicator.
+Missing/corrupt files: pad/slice disabled; clear error in inspector; engine stable.
+Choke race: same-group retrigs resolved “latest wins”, 1 ms crossfade.
+
+10) Acceptance Criteria
+No background analysis when opening any overlay (Scatter/Loop Browser/Slicer/Kit).
+Kit: assign, audition, and record patterns with <5 ms trigger-to-sound on one-shots.
+Slicer: load loop, auto-detect transients, and perform slice edits without audio dropouts.
+Scatter: 10k+ points load <1 s from JSON; hover audition latency <50 ms to preview start.
+Loop Browser: opens instantly; sorting by BPM/Key/Bars instant if index present.
+Both engines integrate with strip, mod matrix, buses, and mix view identically to other engines.
+
+Deliverables (to hand to your coder)
+Engine implementations: SamplerKitEngine, SamplerSlicerEngine, shared SampleBuffer, voice allocator, slice detection utilities.
+UI overlays: Kit (Pad Grid + Pad Inspector + Strip + Scatter Browser); Slicer (Stereo Waveform + Slice Inspector + Strip + Loop Browser).
+Pattern integration: Drum view paging to access pads/slices 1–25; step params parity.
+Mod hookups: all destinations/sources wired; per-engine macro labels.
+SmartKnob profiles: per-parameter curves/detents per above.
+Persistence & error handling: kits, slices, favorites; missing file UX.
+Offline tools: Scatter Analyzer (mandatory for Kit’s scatter), Loop Indexer (optional for Slicer).
+Tests: max-poly stress (Kit), long-loop streaming (Slicer), choke correctness, zero-cross slicing, underrun handling.

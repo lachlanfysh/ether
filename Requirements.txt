@@ -1,0 +1,354 @@
+# ether Portable Synthesizer Requirements Document
+
+## Project Overview
+Design and develop a portable, battery-powered synthesizer that combines the creative workflow of the OP-1 with improved playability, better visual feedback, and enhanced control interface. Target users are electronic musicians seeking a complete portable music creation environment with focus on sound design, production speed, and live performance capability.
+
+## Physical Specifications
+
+### Form Factor
+- **Dimensions**: ~300mm x 109mm (optimized for encoder bank layout)
+- **Weight Target**: <600g for true portability
+- **Construction**: Aluminum housing with professional appearance
+- **Portability**: Must fit in standard laptop bag/backpack
+
+### Keyboard
+- **Key Count**: 26 keys total (16 white + 10 black keys, OMX-27 layout)
+- **White Keys**: 2u depth with Cherry-style stabilizers for professional feel
+- **Black Keys**: 1u standard size (no stabilizers needed)
+- **Layout**: Compressed piano-style layout (OP-1/OMX-27 approach, black keys above white)
+- **Key Technology**: Hall effect sensors for velocity sensitivity AND aftertouch
+- **Velocity Range**: 127 levels (MIDI standard)
+- **Aftertouch**: Polyphonic aftertouch capability
+- **Key Spacing**: ~12mm center-to-center (based on 300mm total width)
+
+### RGB LED System
+- **16 RGB LEDs**: One per white key for step sequencer feedback
+- **LED Functions**: 
+  - Step programming status (off/dim/bright)
+  - Playhead position indication
+  - Pattern and instrument color coding (ROYGBIV + grey system)
+  - Velocity/accent visualization
+- **10 Black Key LEDs**: Pattern selection and function indication
+- **Color Coding**: 8-color instrument identity system (Red, Orange, Yellow, Green, Blue, Indigo, Violet, Grey)
+
+## Control Interface
+
+### Assignable Encoder Bank
+- **4 High-Quality Encoders**: Right side of device, globally assignable to any parameter
+- **Assignment Method**: Touch parameter on screen → Double-click encoder → Global assignment
+- **Global Behavior**: Once assigned, encoder controls that parameter across all modes/screens
+- **Encoder Specifications**: 
+  - Hall effect sensors with haptic feedback
+  - Contextual detents based on parameter type
+  - 24+ steps per rotation for smooth control
+  - RGB LED ring per encoder showing instrument color (when applicable)
+
+### Parameter Display System
+- **OLED Strip Display**: 120mm x 15mm positioned above encoder bank
+- **Content**: Function names only (no parameter values for expression-focused workflow)
+- **Layout**: Four equal sections, one per encoder
+- **Update Behavior**: Only refreshes when parameter assignments change
+- **Precision Mode**: Double-click encoder → Main screen shows parameter with full detail/value
+- **Display Technology**: Individual 0.96" OLED modules with I2C multiplexer (TCA9548A)
+
+### Additional Controls
+- **BLDC Smart Knob**: 35mm diameter, motorized with haptic feedback (optional for future versions)
+- **Analog Master Volume**: Dual-gang potentiometer for true analog volume control
+- **Transport Controls**: Play/Stop, Record (minimal button layout)
+
+### Main Display
+- **Type**: 4.58" IPS LCD bar display (320x960 resolution)
+- **Active Area**: Optimized for horizontal layout
+- **Touch Functionality**: 
+  - Parameter assignment (touch to select for encoder assignment)
+  - Menu navigation and patch browsing
+  - Instrument selection from persistent sidebar
+- **Visual Design**: NSynth Super inspired aesthetics - high contrast, clean grids, smooth animations
+
+## Instrument and Pattern System
+
+### 8-Instrument Architecture
+- **Color-Coded Slots**: ROYGBIV + Grey system for consistent visual identity
+- **Flexible Assignment**: Users populate slots with any instrument type (4 synths, 2 drums, etc.)
+- **Custom Naming**: User-defined names with icon selection per instrument
+- **Persistent Sidebar**: Always-visible instrument list for instant switching and muting
+
+### Timeline-Based Pattern Composition
+- **Pattern Timeline**: Linear song structure view (not pattern banking)
+- **Copy-Insert Workflow**: Copy pattern → Insert in timeline → Modify for variations
+- **Pattern Operations**: Copy, insert, delete, rename operations on timeline
+- **Song Structure**: Visual representation of complete song arrangement
+- **No Pattern Banking**: Patterns exist in song context, not abstract banks
+
+### Euclidean Rhythm Engine
+- **16-Step Grid**: All patterns locked to 16 steps (no variable lengths)
+- **Per-Instrument Parameters**:
+  - **Hits**: 0-16 (number of triggers distributed across 16 steps)
+  - **Rotation**: 0-15 (where pattern starts, for variation)
+- **Automatic Distribution**: Mathematical spacing creates natural polyrhythmic relationships
+- **Pattern Variation**: Rotation changes create rhythmic variations without reprogramming
+
+### M8-Style Timeline FX System
+- **Per-Step FX Assignment**: Each step can have progressive effects applied
+- **FX Types**: Volume ramps, filter sweeps, pitch rises, pan movement, reverb sends
+- **Progressive Control**:
+  - **FX Type**: Filter cutoff, volume, pitch, pan, effects sends
+  - **Direction**: Increase/decrease over time
+  - **Amount**: Increment per repetition (+2dB, +100Hz, +1 semitone)
+  - **Repeat Count**: Number of repetitions (1x, 4x, 8x, 16x)
+  - **Timing**: Every step, every bar, every pattern cycle
+- **Timeline Integration**: FX settings copy with patterns for natural song evolution
+- **Smart Knob Control**: Real-time FX amount adjustment with haptic feedback
+- **Visual Feedback**: Grid arrows show FX progression direction and intensity
+
+## Audio Specifications
+
+### Audio Processing
+- **Sample Rate**: 48kHz (professional standard)
+- **Bit Depth**: 24-bit internal processing
+- **Polyphony**: 16+ voices (limited by synthesis complexity, not CPU)
+- **Latency**: <10ms for real-time playing
+
+### Audio I/O
+- **Line Output**: 3.5mm stereo jack (unbalanced)
+- **Headphone Output**: 3.5mm stereo with dedicated amplifier
+- **Line Input**: 3.5mm stereo for external sources/sampling
+- **Built-in Speaker**: 25mm driver in tuned acoustic chamber for enhanced bass response
+- **Internal Microphone**: For sampling
+- **Speaker Design**: Case volume acts as bass reflex chamber for improved sound quality
+
+### DAC/Codec
+- **Upgrade from PCM5102A to higher quality codec**
+- **Target specs**: >110dB SNR, 24-bit/96kHz capable
+- **Candidates**: Cirrus Logic CS4272, ESS ES9018K2M, or similar
+
+## Core Features
+
+### Synthesis Engines
+- **Subtractive**: Classic analog-style synthesis with multiple oscillators per voice
+- **FM**: DX7-style frequency modulation
+- **Sampler**: OP-1 style sample-based instruments
+- **Granular**: Advanced sample manipulation with grain size, position, stretch, and jitter controls
+- **Chord Generator**: Orchid-style chord logic system with root note + chord type selection
+- **Multi-Engine Support**: Ability to layer/stack multiple engines per instrument for complex timbres
+- **Microtonality**: Subtle pitch variations for organic detuning and expression
+
+### Multi-Mode Architecture
+- **Instrument Mode**: Deep parameter control for selected instrument with multi-engine support
+- **Sequencer Mode**: Timeline-based pattern composition with euclidean programming
+- **Chord Mode**: Multi-instrument chord distribution, assignment matrix, and harmonic management
+- **Tape Mode**: 4-track recording and arrangement (OP-1 style)
+- **Modulation Mode**: Global modulation configuration and assignment (8 LFOs + modulation envelopes)
+- **Punch FX Mode**: Real-time performance effects during playback
+- **Project Mode**: Song settings, BPM, naming, etc.
+
+### Advanced Modulation System
+- **8 Modulation Sources Total**:
+  - **6 LFOs**: Rate, wave shape (sine, triangle, square, saw, random, S&H), amount, sync options
+  - **2 Modulation Envelopes**: Note-triggered ADSR envelopes assignable to any parameter
+- **Global Assignment System**: Any modulation source can be assigned to any parameter
+- **Visual Feedback**: OLED displays show modulation assignments with source indicators
+- **Independent Timing**: Modulation envelopes separate from amplitude envelopes for complex sound evolution
+- **Polyphonic Modulation**: Per-voice modulation envelope instances for true polyphonic expression
+
+### Effects System
+- **Per-Instrument Effects**: Individual effect chains per instrument
+- **Master Effects**: Global processing for entire mix
+- **Punch-In FX**: Performance-oriented real-time effects
+- **Baked-In FX**: Always-active processing (retrigger, arpeggiator, etc.)
+- **Effect Types**: Reverb, delay, filter, distortion, modulation effects
+
+### Sampling and Recording
+- **Record Sources**: Internal mic, line input, internal audio (resampling)
+- **Sample Editing**: Start/end points, loop points, slicing
+- **4-Track Tape**: Record, overdub, cut, copy, paste, lift, drop operations
+- **Timeline Integration**: Tape mode integrated with pattern timeline workflow
+
+## Technical Architecture
+
+### Main Controller
+- **MCU**: STM32H7 series (H733 or H743)
+- **Clock Speed**: 480MHz M7 core + 240MHz M4 core
+- **RAM**: 1MB+ for audio buffering and processing
+- **Flash**: 2MB+ for firmware
+- **Architecture**: Dual-core for audio/UI separation
+
+### Interface Controllers
+- **Hall Sensor ADC**: 4x MCP3208 (12-bit, 8-channel SPI ADCs)
+- **Encoder Interface**: Direct GPIO connection to MCU timers with RGB LED control
+- **OLED Control**: TCA9548A I2C multiplexer for 4x individual OLED modules
+- **Touch Controller**: I2C interface for main display touch sensing
+- **RGB LED Control**: WS2812B addressable LEDs (26 total for keys + 4 for encoders)
+
+### Power Management
+- **Battery**: 2x 18650 Li-ion cells in parallel (7,000mAh total capacity)
+- **Battery Placement**: Quarter-width positions at rear for stability and jack access
+- **Charging**: USB-C with PD capability
+- **Runtime**: 10+ hours continuous operation
+- **Power Optimization**: Aggressive OLED dimming/sleep, efficient audio processing
+
+### Connectivity
+- **USB-C**: MIDI I/O, audio interface, file transfer, charging
+- **MIDI**: Hardware MIDI I/O via 3.5mm TRS jacks (Teenage Engineering style)
+- **Jack Placement**: Center rear between batteries for clean cable management
+
+## PCB Layout Strategy
+
+### RF Isolation Zones
+- **Top-left**: BLDC motor controller (noisy PWM)
+- **Center**: MCU, display controller, digital processing
+- **Top-right**: Audio chain (codec, filters, amplifiers) - isolated from noise
+- **Bottom**: Hall effect sensors with ADC collection
+- **Grounding**: Separate analog/digital ground planes with star connection
+
+### Signal Routing
+- **Hall sensors**: Route to center via 4x ADC ICs, avoid PWM areas
+- **Audio**: Keep analog traces short, separated from digital switching
+- **Power**: Separate regulators for motor, digital, and audio sections
+- **BLDC**: Minimum 15-20mm separation from sensitive analog circuits
+
+### Sensor Interface
+- **Hall Sensor ADC**: 4x MCP3208 (12-bit, 8-channel SPI ADCs)
+- **Total analog channels**: 32 (26 keys + 6 spare for future expansion)
+- **Encoder interface**: Direct GPIO connection to MCU timers
+- **BLDC Control**: Dedicated motor controller IC with SPI interface
+- **RGB LED Control**: WS2812B or similar addressable RGB LEDs (26 total)
+- **Battery holders**: 2x standard PCB-mount 18650 holders at quarter-width positions
+
+## User Interface Design Philosophy
+
+### Expression-First Control
+- **Parameter Names Only**: OLED displays show function names, not values
+- **Blind Parameter Control**: Encourages listening over visual fixation
+- **Double-Click Precision**: Access exact values when needed via main screen
+- **Global Assignments**: Encoder assignments persist across all modes
+
+### Expression and Performance Features
+- **Polyphonic Aftertouch**: Hall-effect sensors enable per-key pressure sensitivity
+- **Pressure-to-Filter Mapping**: Aftertouch controls filter cutoff or oscillator brightness
+- **Microtonality Control**: Subtle pitch variations for organic expression and detuning
+- **Multi-Engine Expression**: Aftertouch can control engine balance and detuning spread
+- **Real-time Modulation**: Live assignment of modulation sources during performance
+
+### Color-Coded Organization
+- **8-Instrument System**: Consistent ROYGBIV + Grey color identity
+- **Visual Continuity**: Colors persist across sequencer, mixer, timeline views
+- **Instrument Recognition**: Icons + names + colors for instant identification
+- **RGB LED Integration**: Encoder LEDs match assigned instrument colors
+
+### Song-Centric Workflow
+- **Timeline Composition**: Patterns exist in song context, not isolation
+- **Section-Based Thinking**: Patterns represent song sections (verse, chorus, etc.)
+- **Copy-Modify Workflow**: Natural song building through pattern evolution
+- **Performance Integration**: Real-time parameter control during playback
+
+### Enhanced Workflow Integration
+**Chord-Driven Composition**:
+- **Master Instrument Sequencing**: Program euclidean patterns for master instrument to trigger chord distributions
+- **Automatic Harmonic Updates**: Change master chord progression, all assigned instruments update chord tones
+- **Copy-Modify Chord Progressions**: Timeline workflow applies to harmonic progressions (Verse → Verse-build with different chords)
+- **Individual Instrument Control**: Each chord-assigned instrument maintains independent synthesis, effects, and timing
+
+**Advanced Arpeggio Integration**:
+- **Timing Spectrum Control**: Per-instrument control from simultaneous chord to sequential arpeggio
+- **Euclidean + Harmonic**: Each instrument gets different euclidean patterns of assigned chord tones
+- **Professional Arrangement**: Automatic bass, pad, lead, and arpeggio role assignment with frequency separation
+- **Bicep-Style Production**: Multi-instrument chord distribution for rich, layered harmonic arrangements
+
+### Step Sequencer Interface (Based on OMX-27 + NSynth Super aesthetics)
+**White Keys (16 keys):**
+- **Step programming**: Each key represents one sequencer step
+- **RGB feedback**: Visual indication of step status, playhead, velocity
+- **Real-time editing**: Add/remove steps during playback
+- **Grid visualization**: Clean 16-step grid display with color-coded tracks
+
+**Black Keys (10 keys):**
+- **Pattern selection**: Keys 1-8 select patterns, instant switching
+- **Function keys**: Copy/paste, mute, clear, tempo controls
+- **LED indication**: Show pattern status and current selection
+
+**Touch Interface Integration:**
+- **XY pad functionality**: Touch screen area for sound morphing/parameter control (Kaoss Pad style)
+- **Direct step touch**: Tap steps on screen in addition to physical keys
+- **Parameter strips**: Visual sliders for real-time parameter adjustment
+- **Waveform interaction**: Touch to zoom/pan oscilloscope display
+- **Step Selection**: Tap euclidean grid dots to select/edit individual steps
+- **FX Assignment Interface**: Full-screen overlay for M8-style FX setup
+  - FX type selection (filter, volume, pitch, pan, sends)
+  - Direction and amount controls with smart knob integration
+  - Repeat count and timing selection
+  - Real-time preview of effect progression
+- **Visual FX Feedback**: Grid arrows and indicators show FX progression
+- **Step Detail Panel**: Slide-up interface showing velocity, FX summary, and timing options
+
+### Screen Examples
+**Instrument Mode:**
+- Screen 1: Engine parameters + morph control (BLDC)
+- Screen 2: Filter parameters + filter sweep (BLDC)  
+- Screen 3: Effects parameters + effect send (BLDC)
+- Screen 4: Modulation parameters + mod wheel (BLDC)
+
+**Sequencer Mode:**
+- Screen 1: Timeline view with pattern arrangement
+- Screen 2: Euclidean parameters (hits/rotation) for selected instrument + M8-style FX editing
+- Screen 3: Step detail view with velocity/timing and progressive FX setup
+
+**Chord Mode:**
+- Screen 1: Chord selection and assignment matrix
+- Screen 2: Harmonic distribution and voicing controls
+- Screen 3: Arpeggio timing and pattern controls
+
+**Tape Mode:**
+- Screen 1: Track levels + tape scrubbing (BLDC)
+- Screen 2: Transport controls + position (BLDC)
+- Screen 3: Edit functions + edit position (BLDC)
+
+## Performance Requirements
+
+### Real-time Constraints
+- **Audio callback**: 128 samples @ 48kHz = 2.67ms deadline
+- **UI responsiveness**: <100ms response to control changes
+- **Display updates**: 30fps minimum for smooth visual feedback
+- **Encoder responsiveness**: <50ms for parameter changes
+
+### Quality Targets
+- **Audio quality**: Professional music production quality
+- **Control precision**: 12-bit resolution for smooth parameter changes
+- **Timing accuracy**: <1ms jitter for musical timing
+- **Reliability**: Consumer electronics durability standards
+
+## Manufacturing Considerations
+
+### Cost Targets
+- **BOM cost**: Target ~$300 for reasonable retail pricing (~$1000)
+- **Critical components**: OLED displays, main LCD, MCU, audio codec, encoders, smart knob
+- **Cost optimization**: Balance features vs. price point
+
+### Supply Chain
+- **Standard Components**: Prefer readily available parts (0.96" OLED modules, etc.)
+- **Multiple Suppliers**: Avoid single-source risk where possible
+- **I2C Multiplexer**: TCA9548A for OLED address conflict resolution
+
+## Success Criteria
+
+### Technical
+- **Sound Design Focus**: Superior workflow for complex sound creation
+- **Production Speed**: Faster than OP-1 for song completion
+- **Expression Control**: Meaningful real-time parameter manipulation
+- **Reliability**: 1000+ hour operation without failure
+
+### User Experience
+- **Intuitive Assignment**: Touch-to-assign encoder workflow
+- **Visual Clarity**: Color coding aids navigation and understanding
+- **Song Completion**: Timeline workflow enables finished songs
+- **Performance Ready**: Real-time control suitable for live use
+
+### Market Position
+- **Unique Architecture**: Timeline + euclidean + assignable encoders + M8-style FX
+- **Sound Design Leader**: Best-in-class synthesis parameter control
+- **Price/Performance**: Superior value vs. OP-1 and competitors
+- **Expandable Platform**: Software updates can add functionality
+
+---
+
+*This requirements document represents the evolved design decisions from extensive interface analysis and workflow optimization. The ether architecture prioritizes musical expression, song completion, and performance capability while maintaining development feasibility.*

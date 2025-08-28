@@ -1,0 +1,207 @@
+Scope: Define consistent control semantics and UX for your existing non-sampler engines, add three new engines, add Vector Path scrubbing to MacroWavetable, and specify preset/QA/implementation details. Do not remove/replace existing FX or engines. When overlap exists, treat items herein as new engines, new macros, or new presets that reuse current DSP/FX.
+
+0) System Targets & Guardrails
+Sample rate: 48 kHz (96 kHz optional).
+Block size: 32–64 samples.
+Engine internal latency: < 1 ms.
+Oversampling (“islands” only): apply 2–4× only around nonlinear cores (e.g., wavefolder/drive/ladder), with polyphase up/down (≤16-tap linear-phase FIR).
+Param smoothing: audible params 10–40 ms expo slew; fast params (env depth etc.) 1–5 ms.
+DC & low-band policy: per-voice DC blocker and 24 Hz HPF (Q≈0.7) after nonlinearities; mono-sum <120 Hz after width/chorus FX.
+Loudness normalization: each engine/preset normalized to ±1 dB LUFS at H/T/M = 50%.
+Engine switch hygiene: equal-power crossfade 25–40 ms (audio & key params) on engine change.
+
+1) Front-Panel Controls (non-sampler engines)
+1.1 Knobs (consistent semantics)
+HARMONICS = brightness/energy Map to LPF cutoff (20 Hz → 12 kHz) or spectral tilt; optionally ride resonance slightly (+0.00 → +0.08) as cutoff opens.
+TIMBRE = source spectrum Osc shape/PWM, FM ratio/wave, additive balance, material type, etc.
+MORPH = secondary dimension / motion / character Wavetable interpolation/path scrub, algorithm blend, exciter↔resonator, post-tone character (drive, interp mode), etc.
+Keep these meanings across all blue/purple/orange engines so muscle memory transfers.
+1.2 SmartKnob (rotation-only)
+Rotation drives the per-engine Macro (“Character”, “Gnarl”, “Weight”, etc.).
+No physical press is required or used.
+Macro HUD (touch UI)
+Always show three small touch buttons near the macro label:
+[Latch] — toggle macro motion (used by Vector Path, macro LFOs).
+[Edit] — open Macro Overlay for the current engine’s macro.
+[Reset] — return macro to preset default.
+Optional rotation gestures (user setting; off by default)
+Detent dwell → Latch: hold within ±1 detent for ≥600 ms toggles [Latch].
+Double-flick → Reset: CW ~20–30° then back CCW within ≤300 ms triggers [Reset].
+Fine mode on slow turn: angular speed <10°/s halves macro sensitivity.
+1.3 Macro Overlay (touch)
+Open via [Edit]:
+Shows the macro curve, current value, and the secondary parameters the macro drives.
+Temporarily repurposes the three encoders with an overlay banner (e.g., “Enc1 Tone • Enc2 Edge • Enc3 Time”).
+Close with [Done], tap outside, or Back.
+
+2) Engine Registry (keep yours; apply mappings)
+You already have these engines. Keep your DSP; apply the H/T/M mappings below and add the preset scenes where noted.
+2.1 MacroVA — Virtual Analog
+HARMONICS: LPF cutoff (exp map) + small auto-Q.
+TIMBRE: saw↔pulse blend; when pulse, PWM around 50% (safe range 45–55%).
+MORPH: sub/noise blend (sub −12 → 0 dB; noise −∞ → −18 dB) + gentle high-tilt (±2 dB @ 4 kHz).
+Preset scene to add (no new DSP): Detuned Stack Pad — detune 22–28%, stereo 45–60%, your existing chorus; Env A 3 ms/D 120 ms/S 0/R 80 ms. Macro increases spread/ensemble.
+2.2 MacroFM — 2-Op FM
+HARMONICS: FM index 0–0.8 (expo); small bright tilt (+1.5 dB @ 2 kHz max).
+TIMBRE: mod ratio set {0.5, 1.0, 1.5, 2.0, 3.0}; sine↔triangle.
+MORPH: feedback 0–0.3 + mod-env decay 30 → 6 ms (linked).
+Sub anchor: optional fixed sub-sine (−12 → −6 dB).
+Preset scene: 2-Op Punch (ratio ≈2.0, index ≈0.35, mod-env 8–20 ms, sub +6 dB). Macro tightens attack by raising index & shortening mod-env.
+2.3 MacroWaveshaper — Waveshaping
+HARMONICS: drive 0–1 (expo) + asymmetry 0–0.4. Oversample 2–4× around shaper only.
+TIMBRE: pre-gain −6 → +12 dB; wavebank select; pre-emphasis ±2 dB @ 2 kHz.
+MORPH: post-LPF 500 Hz–8 kHz + post sat 0–0.2.
+Alias safety: clamp MORPH full-CW so no audible alias splatter.
+2.4 MacroWavetable — Wavetable
+HARMONICS: position scan (band-limited interpolation).
+TIMBRE: formant shift −6 → +6 st; spectral tilt ±3 dB.
+MORPH: Vector Path Scrub (see §3).
+2.5 MacroChord — Multi-Voice
+HARMONICS: detune/spread 0–30 cents (+small LPF open).
+TIMBRE: musical voicings (sus2, sus4, m7, M7, 5th).
+MORPH: chord vs single-note blend (0–1).
+2.6 MacroHarmonics — Additive
+HARMONICS: odd/even tilt −6 → +6 dB + amplitude scaler.
+TIMBRE: drawbar tilt groups (16’/8’ vs 4’/2’).
+MORPH: leakage/key-click & slow harmonic decay.
+Preset scene: Drawbar Keys using your existing rotary/chorus.
+2.7 Formant — Vocal
+HARMONICS: formant F/Q scaler.
+TIMBRE: vowel morph A↔E↔I↔O↔U.
+MORPH: breath/noise + consonant mix.
+2.8 Noise — Granular/Particle
+HARMONICS: grain density 0.5–20 Hz; size 5–120 ms.
+TIMBRE: pitch scatter ±0–120 cents; time jitter 0–40%.
+MORPH: source blend (white/pink/air or sample-tap) + randomness.
+2.9 TidesOsc / RingsVoice / ElementsVoice — Physical Models
+Align names to semantics:
+HARMONICS: slope steepness / resonator F & Q / exciter tone.
+TIMBRE: ratio/material/resonator selection.
+MORPH: exciter↔resonator balance, damping, space.
+(You asked not to cover drums & samplers; they remain as-is and are out of scope here.)
+
+3) Vector Path Scrub (MacroWavetable)
+Goal: Make the SmartKnob feel like a joystick without a press.
+Corner sources: A, B, C, D.
+Equal-power bilinear blend: w A  = ( 1 − x ) ( 1 − y )  w_A=(1-x)(1-y)  wA =(1−x)(1−y), w B  = x ( 1 − y )  w_B=x(1-y)  wB =x(1−y), w C  = ( 1 − x ) y  w_C=(1-x)y  wC =(1−x)y, w D  = x y  w_D=xy  wD =xy; gains g i  = w i   / ∑ w    g_i=\sqrt{w_i}/\sqrt{\sum w}  gi =wi /∑w .
+Path: N waypoints in XY ∈ [0,1]. Interpolate with Catmull-Rom; precompute arc-length LUT for uniform motion.
+SmartKnob rotation: position along path t ∈ [0,1] with detents at waypoints.
+Latch: [Latch] HUD toggles looping playback at current rate. While latched, UI sets Enc3 = Motion Rate (banner hint).
+Edit: [Edit] opens Path Editor: diamond with corners, current dot, curve; touch-drag to add/move points. Enc1=X, Enc2=Y, Enc3=Curvature for selected point. Buttons: [Add] [Delete] [Quantize to corners] [Done].
+Smoothing: 10–25 ms slew on gains & mapped params. If corner type changes (e.g., FM ↔ VA), run two parallel cores for ~25 ms and crossfade.
+
+4) New Engines to Add (neutral names)
+These are additional engines; they do not replace anything you have.
+4.1 Slide+Accent Mono Bass (mono only)
+Osc: saw/square; optional sub −12 → 0 dB.
+Filter: ZDF ladder (3/4-pole) with internal soft-clip; keytrack 0.5–1.0.
+Env: VCA (A 0.5–3 ms, D 80–300 ms); VCF env (D 80–300 ms).
+Slide: exponential legato-only, 5–120 ms per note.
+Accent: per-note: +4–8 dB VCA, +10–25% cutoff, +0–0.05 Q.
+Drive island: pre-filter diode 0–0.3; post-filter soft sat 0–0.3; OS 2–4× only here.
+Phase policy: reset on non-legato; preserve on legato.
+H/T/M maps:
+HARMONICS: cutoff (20 Hz–8 kHz) + small auto-Q.
+TIMBRE: wave blend, sub mix, tiny noise.
+MORPH: env→VCF amount → pre/post drive (curved).
+Voice policy: mono, last-note priority; optional legato retrig toggle.
+4.2 Serial HP→LP Mono (mono only)
+Osc: dual VA (saw/pulse), optional light ring.
+Filter: HP12 → LP12 in series; pre-HP drive.
+Env: fast attack shapes (A min 0.5 ms).
+H/T/M maps:
+HARMONICS: LP cutoff; HP follows as spectral tilt (HP = f(LP)·k).
+TIMBRE: pre-filter drive + HP depth.
+MORPH: resonance macro (HP+LP) + post-EQ tilt (±2 dB @ 300/3k).
+OS island: pre-drive + filter cores.
+4.3 Classic 4-Op FM (poly/mono)
+Algorithms: 6–8 curated (stacks & 2×2).
+Operators: sine; per-op level & ADSR; one feedback-capable carrier path.
+Velocity: → index/level via curve.
+Optional sub anchor: −1 oct sine (−12 → −6 dB) for bass programs.
+Anti-click: operator phase continuity; 0-cross or 0.5 ms ramp on big index changes.
+H/T/M maps:
+HARMONICS: global index scaler + bright tilt (±2 dB @ 2–4 kHz).
+TIMBRE: algorithm bias / carrier-mod balance.
+MORPH: feedback amount + mod-env decay link.
+
+5) Modulation & Sequencer Hooks
+Per-note flags (new): slide_time_ms, accent (0/1).
+Consumed by Slide+Accent Mono Bass; Serial HP→LP Mono may ignore accent.
+Velocity mapping: engine-specific:
+MacroVA → env amt; MacroFM/4-Op → index; MacroWaveshaper → pre-gain; Physical models → exciter intensity.
+Light mod matrix: minimum 4 slots: LFO1, LFO2, AuxEnv, Macro; bipolar depth; destinations include cutoff, index, morph, detune, chorus depth (reuse your system).
+
+6) Parameter Curves & Limits (shared)
+Cutoff mapping: 0–100% → 20 Hz–12 kHz via exponential f = 20 ⋅ 2 x ⋅ α    f = 20·2^{x·\alpha}  f=20⋅2x⋅α, pick α  \alpha  α to hit 12 kHz at 100%.
+Resonance: cap to avoid self-osc unless preset explicitly enables; small auto-ride with cutoff.
+Detune: perceptual mapping, cents = x 2  ⋅ 30  x^2·30  x2⋅30.
+Index/Drive: exponential; clamp so full CW never hard-clips unless preset intends it.
+Env times: min attack ≥ 0.5 ms.
+
+7) Preset Schema & Examples
+Presets reference your existing FX scenes (no replacement). Provide at least 3 per engine (“Clean / Classic / Extreme”).
+7.1 JSON schema (minimal)
+
+{
+  "engine": "MacroWavetable",
+  "name": "Glass Sweep",
+  "H": 0.60, "T": 0.10, "M": 0.35,
+  "params": { "table_bank": "C3", "tilt_db": 1.5 },
+  "macro_map": { "type": "path", "path_id": "A_to_C", "latched": false, "rate_hz": 0.25 },
+  "fx": { "scene": "ChorusA+Plate18" },
+  "poly": 8,
+  "mono_low_hz": 120
+}
+7.2 Starter preset names (neutral, UI-safe)
+Detuned Stack, Anthem Stack, Trance Pluck, Rave Stab, Glass Sweep, Vector Lead, Fold Lead, Harmonic Keys, Additive Organ, Modal Bell, Plucked String, Mono Slide Bass, HP→LP Snarl, 2-Op Punch, 4-Op E-Keys.
+
+8) QA / Acceptance Tests
+H/T/M sweeps: 0→100% on a sustained note: no zipper/clicks; level stable (±1 dB).
+Engine switch: sustain chord; change engines → ≤1 dB loudness change; no pop (crossfade works).
+Slide+Accent Mono: legato slide times honored; phase policy correct; accent raises VCA & cutoff as spec’d.
+Serial HP→LP Mono: obvious serial character; pre-drive bite; no audible aliasing.
+Classic 4-Op FM: EP/bass presets free of clicks on rapid index moves.
+Vector Path: SmartKnob scrubs detented waypoints; [Latch] loops at set rate; Enc3=Rate while latched; Path Editor touch edits are smooth.
+Low-band policy: wide presets remain mono <120 Hz (M/S null test).
+CPU: within target at 48 kHz, block 64; report %/voice for each new engine.
+
+9) UI Strings & Settings (no-press)
+HUD buttons: “Latch”, “Edit”, “Reset”
+Overlay hints: “Enc1=X Enc2=Y Enc3=Curve/Rate”, “Tap outside to close”
+Gesture settings (optional):
+“Detent dwell toggles Latch” (on/off)
+“Double-flick resets Macro” (on/off)
+“Fine adjust on slow turn” (on/off)
+
+10) Legal-Safe Naming & Copy
+Engine/UI labels use neutral names above.
+Preset titles avoid third-party marks.
+If you reference classics in docs, keep it descriptive (“-style”), no logos, no implied affiliation.
+Optional boilerplate: “Product names mentioned for identification are the property of their respective owners. Ether is not affiliated with, endorsed by, or sponsored by those owners.”
+
+11) Implementation Order (incremental)
+Add Slide+Accent Mono Bass.
+Add Serial HP→LP Mono.
+Add Classic 4-Op FM.
+Add Vector Path Scrub to MacroWavetable (HUD + Path Editor).
+Apply global H/T/M mappings, smoothing, normalization, and engine-switch crossfade.
+Ship the neutral preset pack referencing your existing FX scenes.
+
+12) Minimal Architectural Skeleton (for reference)
+
+Stereo processEngine(EngineState* s, NoteEvent* ev) {
+  s->handleEvents(ev); // slide/accent/voice alloc etc.
+
+  Params p = mapControls(s->H, s->T, s->M, s->preset.macro_map, s->mods);
+
+  Stereo x = renderCore(s->core, p.core);              // osc/FM/table/etc.
+  Stereo y = p.nlIsland ? os_process(x, p.nlIsland) : x;// oversampled island if used
+  Stereo z = processFilter(s->filt, y, p.filt);
+
+  z = hp24(dc_block(z));
+  z = mono_low(z, 120.0f);
+  z = limiter(z);
+
+  return applyFXScenes(z, p.fx); // reuses your existing FX
+}

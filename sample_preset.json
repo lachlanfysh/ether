@@ -1,0 +1,87 @@
+{
+  "schema_version": "1.0",
+  "preset_info": {
+    "name": "Detuned Stack Pad",
+    "description": "Rich detuned pad with stacked oscillators and lush modulation",
+    "author": "EtherSynth Factory",
+    "engine_type": 0,
+    "category": 4,
+    "creation_time": 1724511234,
+    "modification_time": 1724511234,
+    "tags": ["pad", "lush", "detuned", "signature", "ambient"]
+  },
+  "hold_params": {
+    "osc1_level": 0.900,
+    "osc2_level": 0.800,
+    "osc3_level": 0.600,
+    "sub_osc_level": 0.300,
+    "noise_level": 0.050,
+    "filter_cutoff": 0.650,
+    "filter_resonance": 0.250,
+    "amp_sustain": 0.850
+  },
+  "twist_params": {
+    "osc2_detune": 0.150,
+    "osc3_detune": -0.120,
+    "env_attack": 0.400,
+    "env_decay": 0.300,
+    "env_release": 0.600,
+    "filter_env_amount": 0.300,
+    "lfo_rate": 0.200,
+    "vibrato_depth": 0.080
+  },
+  "morph_params": {
+    "stereo_spread": 0.700,
+    "chorus_depth": 0.400,
+    "unison_voices": 0.600,
+    "unison_detune": 0.300,
+    "analog_drift": 0.150,
+    "filter_tracking": 0.800
+  },
+  "macro_assignments": {
+    "macro_1": {
+      "parameter": "filter_cutoff",
+      "amount": 0.8,
+      "enabled": true
+    },
+    "macro_2": {
+      "parameter": "chorus_depth",
+      "amount": 0.6,
+      "enabled": true
+    },
+    "macro_3": {
+      "parameter": "unison_detune",
+      "amount": 0.7,
+      "enabled": true
+    },
+    "macro_4": {
+      "parameter": "filter_env_amount",
+      "amount": 0.5,
+      "enabled": true
+    }
+  },
+  "fx_params": {
+    "chorus_rate": 0.300,
+    "chorus_feedback": 0.200,
+    "reverb_size": 0.700,
+    "reverb_decay": 0.800,
+    "reverb_damping": 0.300,
+    "delay_time": 0.250,
+    "delay_feedback": 0.150,
+    "tape_saturation": 0.100
+  },
+  "velocity_config": {
+    "enable_velocity_to_volume": true,
+    "velocity_mappings": {
+      "volume": 0.6,
+      "filter_cutoff": 0.4,
+      "attack_time": -0.3,
+      "chorus_depth": 0.2
+    }
+  },
+  "performance": {
+    "morph_transition_time": 200,
+    "enable_parameter_smoothing": true,
+    "parameter_smoothing_time": 50
+  }
+}

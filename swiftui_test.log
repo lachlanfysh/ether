@@ -1,0 +1,2197 @@
+🚀 Running SwiftUI EtherSynth with C++ Bridge
+
+Building C++ bridge library...
+Building C++ EtherSynth library for Xcode...
+rm: illegal option -- .
+usage: rm [-f | -i] [-dIPRrvWx] file ...
+       unlink [--] file
+
+Starting SwiftUI application...
+[0/1] Planning build
+Building for debugging...
+[0/5] Write sources
+[1/5] Write swift-version--58304C5D6DBC2206.txt
+[3/17] Compiling EtherSynth SynthControllerViewModel.swift
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/SynthControllerViewModel.swift:572:8: error: invalid redeclaration of 'PerformanceMetrics'
+570 | }
+571 | 
+572 | struct PerformanceMetrics {
+    |        `- error: invalid redeclaration of 'PerformanceMetrics'
+573 |     let cpuUsage: Float
+574 |     let memoryUsage: Float
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/SynthControllerViewModel.swift:82:9: error: call to main actor-isolated instance method 'stopPerformanceMonitoring()' in a synchronous nonisolated context
+ 80 |     
+ 81 |     deinit {
+ 82 |         stopPerformanceMonitoring()
+    |         `- error: call to main actor-isolated instance method 'stopPerformanceMonitoring()' in a synchronous nonisolated context
+ 83 |         stopAutoSave()
+ 84 |         saveUserSettings()
+    :
+133 |     }
+134 |     
+135 |     private func stopPerformanceMonitoring() {
+    |                  `- note: calls to instance method 'stopPerformanceMonitoring()' from outside of its actor context are implicitly asynchronous
+136 |         performanceTimer?.invalidate()
+137 |         performanceTimer = nil
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/SynthControllerViewModel.swift:83:9: error: call to main actor-isolated instance method 'stopAutoSave()' in a synchronous nonisolated context
+ 81 |     deinit {
+ 82 |         stopPerformanceMonitoring()
+ 83 |         stopAutoSave()
+    |         `- error: call to main actor-isolated instance method 'stopAutoSave()' in a synchronous nonisolated context
+ 84 |         saveUserSettings()
+ 85 |         synthController.shutdown()
+    :
+146 |     }
+147 |     
+148 |     private func stopAutoSave() {
+    |                  `- note: calls to instance method 'stopAutoSave()' from outside of its actor context are implicitly asynchronous
+149 |         autoSaveTimer?.invalidate()
+150 |         autoSaveTimer = nil
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/SynthControllerViewModel.swift:84:9: error: call to main actor-isolated instance method 'saveUserSettings()' in a synchronous nonisolated context
+ 82 |         stopPerformanceMonitoring()
+ 83 |         stopAutoSave()
+ 84 |         saveUserSettings()
+    |         `- error: call to main actor-isolated instance method 'saveUserSettings()' in a synchronous nonisolated context
+ 85 |         synthController.shutdown()
+ 86 |     }
+    :
+467 |     }
+468 |     
+469 |     private func saveUserSettings() {
+    |                  `- note: calls to instance method 'saveUserSettings()' from outside of its actor context are implicitly asynchronous
+470 |         let defaults = UserDefaults.standard
+471 |         
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/SynthControllerViewModel.swift:108:39: error: value of type 'SynthController' has no member 'setBPM'
+106 |             .debounce(for: 0.1, scheduler: RunLoop.main)
+107 |             .sink { [weak self] bpm in
+108 |                 self?.synthController.setBPM(Float(bpm))
+    |                                       `- error: value of type 'SynthController' has no member 'setBPM'
+109 |             }
+110 |             .store(in: &cancellables)
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/SynthControllerViewModel.swift:116:39: error: value of type 'SynthController' has no member 'setMasterVolume'
+114 |             .debounce(for: 0.05, scheduler: RunLoop.main)
+115 |             .sink { [weak self] volume in
+116 |                 self?.synthController.setMasterVolume(volume)
+    |                                       `- error: value of type 'SynthController' has no member 'setMasterVolume'
+117 |             }
+118 |             .store(in: &cancellables)
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/SynthControllerViewModel.swift:124:39: error: value of type 'SynthController' has no member 'setMasterPan'
+122 |             .debounce(for: 0.05, scheduler: RunLoop.main)
+123 |             .sink { [weak self] pan in
+124 |                 self?.synthController.setMasterPan(pan)
+    |                                       `- error: value of type 'SynthController' has no member 'setMasterPan'
+125 |             }
+126 |             .store(in: &cancellables)
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/SynthControllerViewModel.swift:131:19: warning: call to main actor-isolated instance method 'updatePerformanceMetrics()' in a synchronous nonisolated context; this is an error in the Swift 6 language mode
+129 |     private func startPerformanceMonitoring() {
+130 |         performanceTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in
+131 |             self?.updatePerformanceMetrics()
+    |                   `- warning: call to main actor-isolated instance method 'updatePerformanceMetrics()' in a synchronous nonisolated context; this is an error in the Swift 6 language mode
+132 |         }
+133 |     }
+    :
+407 |     // MARK: - Performance Monitoring
+408 |     
+409 |     private func updatePerformanceMetrics() {
+    |                  `- note: calls to instance method 'updatePerformanceMetrics()' from outside of its actor context are implicitly asynchronous
+410 |         let metrics = synthController.getPerformanceMetrics()
+411 |         
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/SynthControllerViewModel.swift:144:19: warning: call to main actor-isolated instance method 'autoSave()' in a synchronous nonisolated context; this is an error in the Swift 6 language mode
+142 |         
+143 |         autoSaveTimer = Timer.scheduledTimer(withTimeInterval: 30.0, repeats: true) { [weak self] _ in
+144 |             self?.autoSave()
+    |                   `- warning: call to main actor-isolated instance method 'autoSave()' in a synchronous nonisolated context; this is an error in the Swift 6 language mode
+145 |         }
+146 |     }
+    :
+391 |     }
+392 |     
+393 |     private func autoSave() {
+    |                  `- note: calls to instance method 'autoSave()' from outside of its actor context are implicitly asynchronous
+394 |         guard hasUnsavedChanges, isAutoSaveEnabled else { return }
+395 |         
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/SynthControllerViewModel.swift:158:39: error: value of type 'SynthController' has no member 'startPlayback'
+156 |         guard !isPlaying else { return }
+157 |         
+158 |         let success = synthController.startPlayback()
+    |                                       `- error: value of type 'SynthController' has no member 'startPlayback'
+159 |         if success {
+160 |             isPlaying = true
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/SynthControllerViewModel.swift:168:25: error: value of type 'SynthController' has no member 'stopPlayback'
+166 |         guard isPlaying || isPaused else { return }
+167 |         
+168 |         synthController.stopPlayback()
+    |                         `- error: value of type 'SynthController' has no member 'stopPlayback'
+169 |         isPlaying = false
+170 |         isPaused = false
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/SynthControllerViewModel.swift:177:25: error: value of type 'SynthController' has no member 'pausePlayback'
+175 |         guard isPlaying else { return }
+176 |         
+177 |         synthController.pausePlayback()
+    |                         `- error: value of type 'SynthController' has no member 'pausePlayback'
+178 |         isPlaying = false
+179 |         isPaused = true
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/SynthControllerViewModel.swift:185:39: error: value of type 'SynthController' has no member 'resumePlayback'
+183 |         guard isPaused else { return }
+184 |         
+185 |         let success = synthController.resumePlayback()
+    |                                       `- error: value of type 'SynthController' has no member 'resumePlayback'
+186 |         if success {
+187 |             isPlaying = true
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/SynthControllerViewModel.swift:194:25: error: value of type 'SynthController' has no member 'seekToPosition'
+192 |     func seekToPosition(bar: Int, beat: Int = 0, tick: Int = 0) {
+193 |         let position = PlaybackPosition(bar: bar, beat: beat, tick: tick)
+194 |         synthController.seekToPosition(position: position)
+    |                         `- error: value of type 'SynthController' has no member 'seekToPosition'
+195 |         currentPosition = position
+196 |     }
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/SynthControllerViewModel.swift:203:38: error: value of type 'SynthController' has no member 'tapTempo'
+201 |     
+202 |     func tapTempo() {
+203 |         let newBPM = synthController.tapTempo()
+    |                                      `- error: value of type 'SynthController' has no member 'tapTempo'
+204 |         if newBPM > 0 {
+205 |             currentBPM = Double(newBPM)
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/SynthControllerViewModel.swift:221:25: error: value of type 'SynthController' has no member 'setClickEnabled'
+219 |     func toggleClick() {
+220 |         clickEnabled.toggle()
+221 |         synthController.setClickEnabled(clickEnabled)
+    |                         `- error: value of type 'SynthController' has no member 'setClickEnabled'
+222 |     }
+223 |     
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/SynthControllerViewModel.swift:226:25: error: value of type 'SynthController' has no member 'setClickVolume'
+224 |     func setClickVolume(_ volume: Float) {
+225 |         clickVolume = max(0.0, min(1.0, volume))
+226 |         synthController.setClickVolume(clickVolume)
+    |                         `- error: value of type 'SynthController' has no member 'setClickVolume'
+227 |     }
+228 |     
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/SynthControllerViewModel.swift:231:25: error: value of type 'SynthController' has no member 'setSwing'
+229 |     func setSwing(_ swing: Float) {
+230 |         self.swing = max(-0.5, min(0.5, swing))
+231 |         synthController.setSwing(self.swing)
+    |                         `- error: value of type 'SynthController' has no member 'setSwing'
+232 |     }
+233 |     
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/SynthControllerViewModel.swift:236:25: error: value of type 'SynthController' has no member 'setShuffle'
+234 |     func setShuffle(_ shuffle: Float) {
+235 |         self.shuffle = max(0.0, min(1.0, shuffle))
+236 |         synthController.setShuffle(self.shuffle)
+    |                         `- error: value of type 'SynthController' has no member 'setShuffle'
+237 |     }
+238 |     
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/SynthControllerViewModel.swift:244:39: error: value of type 'SynthController' has no member 'startRecording'
+242 |         guard !isRecording else { return }
+243 |         
+244 |         let success = synthController.startRecording()
+    |                                       `- error: value of type 'SynthController' has no member 'startRecording'
+245 |         if success {
+246 |             isRecording = true
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/SynthControllerViewModel.swift:256:25: error: value of type 'SynthController' has no member 'stopRecording'
+254 |         guard isRecording else { return }
+255 |         
+256 |         synthController.stopRecording()
+    |                         `- error: value of type 'SynthController' has no member 'stopRecording'
+257 |         isRecording = false
+258 |     }
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/SynthControllerViewModel.swift:261:25: error: value of type 'SynthController' has no member 'armTrackForRecording'
+259 |     
+260 |     func armTrackForRecording(trackId: Int) {
+261 |         synthController.armTrackForRecording(track: trackId)
+    |                         `- error: value of type 'SynthController' has no member 'armTrackForRecording'
+262 |         markAsChanged()
+263 |     }
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/SynthControllerViewModel.swift:266:25: error: value of type 'SynthController' has no member 'disarmTrackForRecording'
+264 |     
+265 |     func disarmTrackForRecording(trackId: Int) {
+266 |         synthController.disarmTrackForRecording(track: trackId)
+    |                         `- error: value of type 'SynthController' has no member 'disarmTrackForRecording'
+267 |         markAsChanged()
+268 |     }
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/SynthControllerViewModel.swift:278:39: error: value of type 'SynthController' has no member 'getAudioInputDevices'
+276 |     
+277 |     private func refreshAudioDevices() {
+278 |         audioInputs = synthController.getAudioInputDevices()
+    |                                       `- error: value of type 'SynthController' has no member 'getAudioInputDevices'
+279 |         audioOutputs = synthController.getAudioOutputDevices()
+280 |         
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/SynthControllerViewModel.swift:279:40: error: value of type 'SynthController' has no member 'getAudioOutputDevices'
+277 |     private func refreshAudioDevices() {
+278 |         audioInputs = synthController.getAudioInputDevices()
+279 |         audioOutputs = synthController.getAudioOutputDevices()
+    |                                        `- error: value of type 'SynthController' has no member 'getAudioOutputDevices'
+280 |         
+281 |         // Set defaults if not already set
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/SynthControllerViewModel.swift:292:38: error: value of type 'SynthController' has no member 'getMidiInputDevices'
+290 |     
+291 |     private func refreshMidiDevices() {
+292 |         midiInputs = synthController.getMidiInputDevices()
+    |                                      `- error: value of type 'SynthController' has no member 'getMidiInputDevices'
+293 |         midiOutputs = synthController.getMidiOutputDevices()
+294 |     }
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/SynthControllerViewModel.swift:293:39: error: value of type 'SynthController' has no member 'getMidiOutputDevices'
+291 |     private func refreshMidiDevices() {
+292 |         midiInputs = synthController.getMidiInputDevices()
+293 |         midiOutputs = synthController.getMidiOutputDevices()
+    |                                       `- error: value of type 'SynthController' has no member 'getMidiOutputDevices'
+294 |     }
+295 |     
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/SynthControllerViewModel.swift:298:25: error: value of type 'SynthController' has no member 'setAudioInputDevice'
+296 |     func setAudioInput(_ deviceId: String) {
+297 |         selectedAudioInput = deviceId
+298 |         synthController.setAudioInputDevice(deviceId: deviceId)
+    |                         `- error: value of type 'SynthController' has no member 'setAudioInputDevice'
+299 |         saveUserSettings()
+300 |     }
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/SynthControllerViewModel.swift:304:25: error: value of type 'SynthController' has no member 'setAudioOutputDevice'
+302 |     func setAudioOutput(_ deviceId: String) {
+303 |         selectedAudioOutput = deviceId
+304 |         synthController.setAudioOutputDevice(deviceId: deviceId)
+    |                         `- error: value of type 'SynthController' has no member 'setAudioOutputDevice'
+305 |         saveUserSettings()
+306 |     }
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/SynthControllerViewModel.swift:310:25: error: value of type 'SynthController' has no member 'setMidiInputDevice'
+308 |     func setMidiInput(_ deviceId: String) {
+309 |         selectedMidiInput = deviceId
+310 |         synthController.setMidiInputDevice(deviceId: deviceId)
+    |                         `- error: value of type 'SynthController' has no member 'setMidiInputDevice'
+311 |         saveUserSettings()
+312 |     }
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/SynthControllerViewModel.swift:316:25: error: value of type 'SynthController' has no member 'setMidiOutputDevice'
+314 |     func setMidiOutput(_ deviceId: String) {
+315 |         selectedMidiOutput = deviceId
+316 |         synthController.setMidiOutputDevice(deviceId: deviceId)
+    |                         `- error: value of type 'SynthController' has no member 'setMidiOutputDevice'
+317 |         saveUserSettings()
+318 |     }
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/SynthControllerViewModel.swift:322:25: error: value of type 'SynthController' has no member 'setSampleRate'
+320 |     func setSampleRate(_ sampleRate: Float) {
+321 |         self.sampleRate = sampleRate
+322 |         synthController.setSampleRate(sampleRate)
+    |                         `- error: value of type 'SynthController' has no member 'setSampleRate'
+323 |         markAsChanged()
+324 |     }
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/SynthControllerViewModel.swift:328:25: error: value of type 'SynthController' has no member 'setBufferSize'
+326 |     func setBufferSize(_ bufferSize: Int) {
+327 |         self.bufferSize = bufferSize
+328 |         synthController.setBufferSize(bufferSize)
+    |                         `- error: value of type 'SynthController' has no member 'setBufferSize'
+329 |         markAsChanged()
+330 |     }
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/SynthControllerViewModel.swift:339:25: error: value of type 'SynthController' has no member 'newProject'
+337 |         }
+338 |         
+339 |         synthController.newProject()
+    |                         `- error: value of type 'SynthController' has no member 'newProject'
+340 |         currentProject = nil
+341 |         hasUnsavedChanges = false
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/SynthControllerViewModel.swift:346:31: error: value of type 'SynthController' has no member 'loadProject'
+344 |     
+345 |     func loadProject(url: URL) -> Bool {
+346 |         guard synthController.loadProject(url: url) else {
+    |                               `- error: value of type 'SynthController' has no member 'loadProject'
+347 |             return false
+348 |         }
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/SynthControllerViewModel.swift:378:31: error: value of type 'SynthController' has no member 'saveProject'
+376 |     
+377 |     private func saveProject(to url: URL) -> Bool {
+378 |         guard synthController.saveProject(url: url) else {
+    |                               `- error: value of type 'SynthController' has no member 'saveProject'
+379 |             return false
+380 |         }
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/SynthControllerViewModel.swift:399:33: error: value of type 'SynthController' has no member 'saveProject'
+397 |         if let projectURL = currentProject?.url {
+398 |             let autosaveURL = projectURL.appendingPathExtension("autosave")
+399 |             _ = synthController.saveProject(url: autosaveURL)
+    |                                 `- error: value of type 'SynthController' has no member 'saveProject'
+400 |         }
+401 |     }
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/SynthControllerViewModel.swift:410:39: error: value of type 'SynthController' has no member 'getPerformanceMetrics'
+408 |     
+409 |     private func updatePerformanceMetrics() {
+410 |         let metrics = synthController.getPerformanceMetrics()
+    |                                       `- error: value of type 'SynthController' has no member 'getPerformanceMetrics'
+411 |         
+412 |         cpuUsage = metrics.cpuUsage
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/SynthControllerViewModel.swift:419:47: error: value of type 'SynthController' has no member 'getCurrentPosition'
+417 |         // Update current position if playing
+418 |         if isPlaying {
+419 |             currentPosition = synthController.getCurrentPosition()
+    |                                               `- error: value of type 'SynthController' has no member 'getCurrentPosition'
+420 |         }
+421 |     }
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/SynthControllerViewModel.swift:426:25: error: value of type 'SynthController' has no member 'sendMIDINote'
+424 |     
+425 |     func sendMIDINote(channel: Int, note: Int, velocity: Int, on: Bool) {
+426 |         synthController.sendMIDINote(channel: channel, note: note, velocity: velocity, on: on)
+    |                         `- error: value of type 'SynthController' has no member 'sendMIDINote'
+427 |     }
+428 |     
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/SynthControllerViewModel.swift:430:25: error: value of type 'SynthController' has no member 'sendMIDICC'
+428 |     
+429 |     func sendMIDICC(channel: Int, controller: Int, value: Int) {
+430 |         synthController.sendMIDICC(channel: channel, controller: controller, value: value)
+    |                         `- error: value of type 'SynthController' has no member 'sendMIDICC'
+431 |     }
+432 |     
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/SynthControllerViewModel.swift:435:25: error: value of type 'SynthController' has no member 'setMidiThru'
+433 |     func setMidiThru(_ enabled: Bool) {
+434 |         midiThru = enabled
+435 |         synthController.setMidiThru(enabled)
+    |                         `- error: value of type 'SynthController' has no member 'setMidiThru'
+436 |         saveUserSettings()
+437 |     }
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/SynthControllerViewModel.swift:441:25: error: value of type 'SynthController' has no member 'setMidiClock'
+439 |     func setMidiClock(_ enabled: Bool) {
+440 |         midiClock = enabled
+441 |         synthController.setMidiClock(enabled)
+    |                         `- error: value of type 'SynthController' has no member 'setMidiClock'
+442 |         saveUserSettings()
+443 |     }
+[4/17] Compiling EtherSynth TimelineViewModel.swift
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/TimelineViewModel.swift:512:8: error: type 'ProjectData' does not conform to protocol 'Decodable'
+510 | // MARK: - Data Models for Export/Import
+511 | 
+512 | struct ProjectData: Codable {
+    |        `- error: type 'ProjectData' does not conform to protocol 'Decodable'
+513 |     let tracks: [TimelineTrack]
+    |         `- note: cannot automatically synthesize 'Decodable' because '[TimelineTrack]' does not conform to 'Decodable'
+514 |     let totalBars: Int
+515 |     let loopStart: Int
+516 |     let loopEnd: Int
+517 |     let gridResolution: TimelineViewModel.GridResolution
+    |         `- note: cannot automatically synthesize 'Decodable' because 'TimelineViewModel.GridResolution' does not conform to 'Decodable'
+518 | }
+519 | 
+
+Swift.Decodable.init:2:1: note: protocol requires initializer 'init(from:)' with type 'Decodable'
+1 | protocol Decodable {
+2 | init(from decoder: any Decoder) throws}
+  | `- note: protocol requires initializer 'init(from:)' with type 'Decodable'
+3 | 
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/TimelineViewModel.swift:512:8: error: type 'ProjectData' does not conform to protocol 'Encodable'
+510 | // MARK: - Data Models for Export/Import
+511 | 
+512 | struct ProjectData: Codable {
+    |        `- error: type 'ProjectData' does not conform to protocol 'Encodable'
+513 |     let tracks: [TimelineTrack]
+    |         `- note: cannot automatically synthesize 'Encodable' because '[TimelineTrack]' does not conform to 'Encodable'
+514 |     let totalBars: Int
+515 |     let loopStart: Int
+516 |     let loopEnd: Int
+517 |     let gridResolution: TimelineViewModel.GridResolution
+    |         `- note: cannot automatically synthesize 'Encodable' because 'TimelineViewModel.GridResolution' does not conform to 'Encodable'
+518 | }
+519 | 
+
+Swift.Encodable.encode:2:6: note: protocol requires function 'encode(to:)' with type 'Encodable'
+1 | protocol Encodable {
+2 | func encode(to encoder: any Encoder) throws}
+  |      `- note: protocol requires function 'encode(to:)' with type 'Encodable'
+3 | 
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/TimelineViewModel.swift:522:8: error: invalid redeclaration of 'PerformanceMetrics'
+520 | // MARK: - Performance Metrics
+521 | 
+522 | struct PerformanceMetrics {
+    |        `- error: invalid redeclaration of 'PerformanceMetrics'
+523 |     let cpuUsage: Float
+524 |     let memoryUsage: Float
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/TimelineViewModel.swift:73:9: error: call to main actor-isolated instance method 'stopPlayback()' in a synchronous nonisolated context
+ 71 |     
+ 72 |     deinit {
+ 73 |         stopPlayback()
+    |         `- error: call to main actor-isolated instance method 'stopPlayback()' in a synchronous nonisolated context
+ 74 |         stopPerformanceMonitoring()
+ 75 |     }
+    :
+255 |     }
+256 |     
+257 |     func stopPlayback() {
+    |          `- note: calls to instance method 'stopPlayback()' from outside of its actor context are implicitly asynchronous
+258 |         guard isPlaying else { return }
+259 |         
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/TimelineViewModel.swift:74:9: error: call to main actor-isolated instance method 'stopPerformanceMonitoring()' in a synchronous nonisolated context
+ 72 |     deinit {
+ 73 |         stopPlayback()
+ 74 |         stopPerformanceMonitoring()
+    |         `- error: call to main actor-isolated instance method 'stopPerformanceMonitoring()' in a synchronous nonisolated context
+ 75 |     }
+ 76 |     
+    :
+436 |     }
+437 |     
+438 |     private func stopPerformanceMonitoring() {
+    |                  `- note: calls to instance method 'stopPerformanceMonitoring()' from outside of its actor context are implicitly asynchronous
+439 |         performanceTimer?.invalidate()
+440 |         performanceTimer = nil
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/TimelineViewModel.swift:81:26: error: extra arguments at positions #2, #4, #5, #6, #7, #8 in call
+ 79 |     private func setupTracks() {
+ 80 |         tracks = (0..<8).map { index in
+ 81 |             TimelineTrack(
+    |                          `- error: extra arguments at positions #2, #4, #5, #6, #7, #8 in call
+ 82 |                 id: index,
+ 83 |                 name: "Track \(index + 1)",
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/TimelineView.swift:18:5: note: 'init(id:color:)' declared here
+ 16 |     var volume: Float = 0.8
+ 17 |     
+ 18 |     init(id: Int, color: InstrumentColor) {
+    |     `- note: 'init(id:color:)' declared here
+ 19 |         self.id = id
+ 20 |         self.color = color
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/TimelineViewModel.swift:89:33: error: 'nil' requires a contextual type
+ 87 |                 volume: 0.8,
+ 88 |                 patterns: [],
+ 89 |                 assignedEngine: nil
+    |                                 `- error: 'nil' requires a contextual type
+ 90 |             )
+ 91 |         }
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/TimelineViewModel.swift:104:25: error: value of type 'TimelineTrack' has no member 'isMuted'
+102 |     func toggleMute(trackId: Int) {
+103 |         guard trackId < tracks.count else { return }
+104 |         tracks[trackId].isMuted.toggle()
+    |                         `- error: value of type 'TimelineTrack' has no member 'isMuted'
+105 |         
+106 |         // Update synth controller
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/TimelineViewModel.swift:107:25: error: value of type 'SynthController' has no member 'setTrackMute'
+105 |         
+106 |         // Update synth controller
+107 |         synthController.setTrackMute(track: trackId, muted: tracks[trackId].isMuted)
+    |                         `- error: value of type 'SynthController' has no member 'setTrackMute'
+108 |     }
+109 |     
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/TimelineViewModel.swift:107:77: error: value of type 'TimelineTrack' has no member 'isMuted'
+105 |         
+106 |         // Update synth controller
+107 |         synthController.setTrackMute(track: trackId, muted: tracks[trackId].isMuted)
+    |                                                                             `- error: value of type 'TimelineTrack' has no member 'isMuted'
+108 |     }
+109 |     
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/TimelineViewModel.swift:112:25: error: value of type 'TimelineTrack' has no member 'isSoloed'
+110 |     func toggleSolo(trackId: Int) {
+111 |         guard trackId < tracks.count else { return }
+112 |         tracks[trackId].isSoloed.toggle()
+    |                         `- error: value of type 'TimelineTrack' has no member 'isSoloed'
+113 |         
+114 |         // Handle solo logic
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/TimelineViewModel.swift:116:19: error: value of type 'TimelineTrack' has no member 'isSoloed'
+114 |         // Handle solo logic
+115 |         let soloedTracks = tracks.enumerated().compactMap { index, track in
+116 |             track.isSoloed ? index : nil
+    |                   `- error: value of type 'TimelineTrack' has no member 'isSoloed'
+117 |         }
+118 |         
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/TimelineViewModel.swift:120:65: error: value of type 'TimelineTrack' has no member 'isSoloed'
+118 |         
+119 |         for (index, track) in tracks.enumerated() {
+120 |             let shouldBeMuted = !soloedTracks.isEmpty && !track.isSoloed
+    |                                                                 `- error: value of type 'TimelineTrack' has no member 'isSoloed'
+121 |             synthController.setTrackMute(track: index, muted: shouldBeMuted)
+122 |         }
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/TimelineViewModel.swift:121:29: error: value of type 'SynthController' has no member 'setTrackMute'
+119 |         for (index, track) in tracks.enumerated() {
+120 |             let shouldBeMuted = !soloedTracks.isEmpty && !track.isSoloed
+121 |             synthController.setTrackMute(track: index, muted: shouldBeMuted)
+    |                             `- error: value of type 'SynthController' has no member 'setTrackMute'
+122 |         }
+123 |     }
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/TimelineViewModel.swift:128:25: error: value of type 'SynthController' has no member 'setTrackVolume'
+126 |         guard trackId < tracks.count else { return }
+127 |         tracks[trackId].volume = volume
+128 |         synthController.setTrackVolume(track: trackId, volume: volume)
+    |                         `- error: value of type 'SynthController' has no member 'setTrackVolume'
+129 |     }
+130 |     
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/TimelineViewModel.swift:133:25: error: value of type 'TimelineTrack' has no member 'assignedEngine'
+131 |     func assignEngine(trackId: Int, engineType: Int) {
+132 |         guard trackId < tracks.count else { return }
+133 |         tracks[trackId].assignedEngine = engineType
+    |                         `- error: value of type 'TimelineTrack' has no member 'assignedEngine'
+134 |         synthController.assignEngineToTrack(track: trackId, engineType: engineType)
+135 |     }
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/TimelineViewModel.swift:134:25: error: value of type 'SynthController' has no member 'assignEngineToTrack'
+132 |         guard trackId < tracks.count else { return }
+133 |         tracks[trackId].assignedEngine = engineType
+134 |         synthController.assignEngineToTrack(track: trackId, engineType: engineType)
+    |                         `- error: value of type 'SynthController' has no member 'assignEngineToTrack'
+135 |     }
+136 |     
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/TimelineViewModel.swift:139:25: error: value of type 'TimelineTrack' has no member 'assignedEngine'
+137 |     func clearEngine(trackId: Int) {
+138 |         guard trackId < tracks.count else { return }
+139 |         tracks[trackId].assignedEngine = nil
+    |                         `- error: value of type 'TimelineTrack' has no member 'assignedEngine'
+140 |         synthController.clearTrackEngine(track: trackId)
+141 |     }
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/TimelineViewModel.swift:140:25: error: value of type 'SynthController' has no member 'clearTrackEngine'
+138 |         guard trackId < tracks.count else { return }
+139 |         tracks[trackId].assignedEngine = nil
+140 |         synthController.clearTrackEngine(track: trackId)
+    |                         `- error: value of type 'SynthController' has no member 'clearTrackEngine'
+141 |     }
+142 |     
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/TimelineViewModel.swift:148:38: error: extra arguments at positions #1, #3, #4, #5 in call
+146 |         guard trackId < tracks.count else { return }
+147 |         
+148 |         let pattern = TimelinePattern(
+    |                                      `- error: extra arguments at positions #1, #3, #4, #5 in call
+149 |             id: UUID().uuidString,
+150 |             startBar: startBar,
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/TimelineView.swift:32:5: note: 'init(name:startBeat:lengthBeat:color:)' declared here
+ 30 |     let color: Color
+ 31 |     
+ 32 |     init(name: String, startBeat: Int, lengthBeat: Int, color: Color) {
+    |     `- note: 'init(name:startBeat:lengthBeat:color:)' declared here
+ 33 |         self.id = UUID().uuidString
+ 34 |         self.name = name
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/TimelineViewModel.swift:148:38: error: missing arguments for parameters 'name', 'lengthBeat', 'color' in call
+146 |         guard trackId < tracks.count else { return }
+147 |         
+148 |         let pattern = TimelinePattern(
+    |                                      `- error: missing arguments for parameters 'name', 'lengthBeat', 'color' in call
+149 |             id: UUID().uuidString,
+150 |             startBar: startBar,
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/TimelineView.swift:32:5: note: 'init(name:startBeat:lengthBeat:color:)' declared here
+ 30 |     let color: Color
+ 31 |     
+ 32 |     init(name: String, startBeat: Int, lengthBeat: Int, color: Color) {
+    |     `- note: 'init(name:startBeat:lengthBeat:color:)' declared here
+ 33 |         self.id = UUID().uuidString
+ 34 |         self.name = name
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/TimelineViewModel.swift:169:48: error: extra arguments at positions #1, #3, #4, #5 in call
+167 |               let pattern = tracks[trackId].patterns.first(where: { $0.id == patternId }) else { return }
+168 |         
+169 |         let duplicatedPattern = TimelinePattern(
+    |                                                `- error: extra arguments at positions #1, #3, #4, #5 in call
+170 |             id: UUID().uuidString,
+171 |             startBar: pattern.startBar + pattern.length,
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/TimelineView.swift:32:5: note: 'init(name:startBeat:lengthBeat:color:)' declared here
+ 30 |     let color: Color
+ 31 |     
+ 32 |     init(name: String, startBeat: Int, lengthBeat: Int, color: Color) {
+    |     `- note: 'init(name:startBeat:lengthBeat:color:)' declared here
+ 33 |         self.id = UUID().uuidString
+ 34 |         self.name = name
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/TimelineViewModel.swift:169:48: error: missing arguments for parameters 'name', 'lengthBeat', 'color' in call
+167 |               let pattern = tracks[trackId].patterns.first(where: { $0.id == patternId }) else { return }
+168 |         
+169 |         let duplicatedPattern = TimelinePattern(
+    |                                                `- error: missing arguments for parameters 'name', 'lengthBeat', 'color' in call
+170 |             id: UUID().uuidString,
+171 |             startBar: pattern.startBar + pattern.length,
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/TimelineView.swift:32:5: note: 'init(name:startBeat:lengthBeat:color:)' declared here
+ 30 |     let color: Color
+ 31 |     
+ 32 |     init(name: String, startBeat: Int, lengthBeat: Int, color: Color) {
+    |     `- note: 'init(name:startBeat:lengthBeat:color:)' declared here
+ 33 |         self.id = UUID().uuidString
+ 34 |         self.name = name
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/TimelineViewModel.swift:171:40: error: cannot convert value of type 'String' to expected argument type 'Int'
+169 |         let duplicatedPattern = TimelinePattern(
+170 |             id: UUID().uuidString,
+171 |             startBar: pattern.startBar + pattern.length,
+    |                                        `- error: cannot convert value of type 'String' to expected argument type 'Int'
+172 |             length: pattern.length,
+173 |             type: pattern.type,
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/TimelineViewModel.swift:171:31: error: value of type 'TimelinePattern' has no member 'startBar'
+169 |         let duplicatedPattern = TimelinePattern(
+170 |             id: UUID().uuidString,
+171 |             startBar: pattern.startBar + pattern.length,
+    |                               `- error: value of type 'TimelinePattern' has no member 'startBar'
+172 |             length: pattern.length,
+173 |             type: pattern.type,
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/TimelineViewModel.swift:171:50: error: value of type 'TimelinePattern' has no member 'length'
+169 |         let duplicatedPattern = TimelinePattern(
+170 |             id: UUID().uuidString,
+171 |             startBar: pattern.startBar + pattern.length,
+    |                                                  `- error: value of type 'TimelinePattern' has no member 'length'
+172 |             length: pattern.length,
+173 |             type: pattern.type,
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/TimelineViewModel.swift:172:29: error: value of type 'TimelinePattern' has no member 'length'
+170 |             id: UUID().uuidString,
+171 |             startBar: pattern.startBar + pattern.length,
+172 |             length: pattern.length,
+    |                             `- error: value of type 'TimelinePattern' has no member 'length'
+173 |             type: pattern.type,
+174 |             data: pattern.data
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/TimelineViewModel.swift:173:27: error: value of type 'TimelinePattern' has no member 'type'
+171 |             startBar: pattern.startBar + pattern.length,
+172 |             length: pattern.length,
+173 |             type: pattern.type,
+    |                           `- error: value of type 'TimelinePattern' has no member 'type'
+174 |             data: pattern.data
+175 |         )
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/TimelineViewModel.swift:174:27: error: value of type 'TimelinePattern' has no member 'data'
+172 |             length: pattern.length,
+173 |             type: pattern.type,
+174 |             data: pattern.data
+    |                           `- error: value of type 'TimelinePattern' has no member 'data'
+175 |         )
+176 |         
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/TimelineViewModel.swift:185:48: error: value of type 'TimelinePattern' has no member 'startBar'
+183 |               let patternIndex = tracks[trackId].patterns.firstIndex(where: { $0.id == patternId }) else { return }
+184 |         
+185 |         tracks[trackId].patterns[patternIndex].startBar = max(0, newStartBar)
+    |                                                `- error: value of type 'TimelinePattern' has no member 'startBar'
+186 |         sortTrackPatterns(trackId: trackId)
+187 |     }
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/TimelineViewModel.swift:193:48: error: value of type 'TimelinePattern' has no member 'length'
+191 |               let patternIndex = tracks[trackId].patterns.firstIndex(where: { $0.id == patternId }) else { return }
+192 |         
+193 |         tracks[trackId].patterns[patternIndex].length = max(1, newLength)
+    |                                                `- error: value of type 'TimelinePattern' has no member 'length'
+194 |     }
+195 |     
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/TimelineViewModel.swift:197:34: error: type '(_, _) -> Bool' cannot conform to 'SortComparator'
+195 |     
+196 |     private func sortTrackPatterns(trackId: Int) {
+197 |         tracks[trackId].patterns.sort { $0.startBar < $1.startBar }
+    |                                  |- error: type '(_, _) -> Bool' cannot conform to 'SortComparator'
+    |                                  |- note: only concrete types such as structs, enums and classes can conform to protocols
+    |                                  `- note: required by instance method 'sort(using:)' where 'Comparator' = '(_, _) -> Bool'
+198 |     }
+199 |     
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/TimelineViewModel.swift:197:39: error: cannot infer type of closure parameter '$0' without a type annotation
+195 |     
+196 |     private func sortTrackPatterns(trackId: Int) {
+197 |         tracks[trackId].patterns.sort { $0.startBar < $1.startBar }
+    |                                       `- error: cannot infer type of closure parameter '$0' without a type annotation
+198 |     }
+199 |     
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/TimelineViewModel.swift:197:39: error: cannot infer type of closure parameter '$1' without a type annotation
+195 |     
+196 |     private func sortTrackPatterns(trackId: Int) {
+197 |         tracks[trackId].patterns.sort { $0.startBar < $1.startBar }
+    |                                       `- error: cannot infer type of closure parameter '$1' without a type annotation
+198 |     }
+199 |     
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/TimelineViewModel.swift:202:15: error: type 'PatternType' has no member 'notes'
+200 |     private func generateDefaultPatternData(type: PatternType, length: Int) -> PatternData {
+201 |         switch type {
+202 |         case .notes:
+    |               `- error: type 'PatternType' has no member 'notes'
+203 |             return .notes([])
+204 |         case .drums:
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/TimelineViewModel.swift:204:15: error: type 'PatternType' has no member 'drums'
+202 |         case .notes:
+203 |             return .notes([])
+204 |         case .drums:
+    |               `- error: type 'PatternType' has no member 'drums'
+205 |             return .drums(generateDefaultDrumPattern(length: length))
+206 |         case .automation:
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/TimelineViewModel.swift:206:15: error: type 'PatternType' has no member 'automation'
+204 |         case .drums:
+205 |             return .drums(generateDefaultDrumPattern(length: length))
+206 |         case .automation:
+    |               `- error: type 'PatternType' has no member 'automation'
+207 |             return .automation([])
+208 |         }
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/TimelineViewModel.swift:203:21: error: cannot call value of non-function type '[Note]'
+201 |         switch type {
+202 |         case .notes:
+203 |             return .notes([])
+    |                     `- error: cannot call value of non-function type '[Note]'
+204 |         case .drums:
+205 |             return .drums(generateDefaultDrumPattern(length: length))
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/TimelineViewModel.swift:203:21: error: instance member 'notes' cannot be used on type 'PatternData'
+201 |         switch type {
+202 |         case .notes:
+203 |             return .notes([])
+    |                     `- error: instance member 'notes' cannot be used on type 'PatternData'
+204 |         case .drums:
+205 |             return .drums(generateDefaultDrumPattern(length: length))
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/TimelineViewModel.swift:205:21: error: type 'PatternData' has no member 'drums'
+203 |             return .notes([])
+204 |         case .drums:
+205 |             return .drums(generateDefaultDrumPattern(length: length))
+    |                     `- error: type 'PatternData' has no member 'drums'
+206 |         case .automation:
+207 |             return .automation([])
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/TimelineViewModel.swift:207:21: error: type 'PatternData' has no member 'automation'
+205 |             return .drums(generateDefaultDrumPattern(length: length))
+206 |         case .automation:
+207 |             return .automation([])
+    |                     `- error: type 'PatternData' has no member 'automation'
+208 |         }
+209 |     }
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/TimelineViewModel.swift:221:40: error: extra arguments at positions #1, #3, #4 in call
+219 |                 // Kick on 1 and 3
+220 |                 if beat == 0 || beat == 2 {
+221 |                     hits.append(DrumHit(
+    |                                        `- error: extra arguments at positions #1, #3, #4 in call
+222 |                         position: Float(position),
+223 |                         velocity: 0.8,
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/InstrumentBrowserViewModel.swift:17:8: note: 'init(velocity:time:drum:)' declared here
+ 15 | }
+ 16 | 
+ 17 | struct DrumHit {
+    |        `- note: 'init(velocity:time:drum:)' declared here
+ 18 |     let velocity: Float
+ 19 |     let time: Float
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/TimelineViewModel.swift:221:40: error: missing arguments for parameters 'time', 'drum' in call
+219 |                 // Kick on 1 and 3
+220 |                 if beat == 0 || beat == 2 {
+221 |                     hits.append(DrumHit(
+    |                                        `- error: missing arguments for parameters 'time', 'drum' in call
+222 |                         position: Float(position),
+223 |                         velocity: 0.8,
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/InstrumentBrowserViewModel.swift:17:8: note: 'init(velocity:time:drum:)' declared here
+ 15 | }
+ 16 | 
+ 17 | struct DrumHit {
+    |        `- note: 'init(velocity:time:drum:)' declared here
+ 18 |     let velocity: Float
+ 19 |     let time: Float
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/TimelineViewModel.swift:231:40: error: extra arguments at positions #1, #3, #4 in call
+229 |                 // Snare on 2 and 4
+230 |                 if beat == 1 || beat == 3 {
+231 |                     hits.append(DrumHit(
+    |                                        `- error: extra arguments at positions #1, #3, #4 in call
+232 |                         position: Float(position),
+233 |                         velocity: 0.7,
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/InstrumentBrowserViewModel.swift:17:8: note: 'init(velocity:time:drum:)' declared here
+ 15 | }
+ 16 | 
+ 17 | struct DrumHit {
+    |        `- note: 'init(velocity:time:drum:)' declared here
+ 18 |     let velocity: Float
+ 19 |     let time: Float
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/TimelineViewModel.swift:231:40: error: missing arguments for parameters 'time', 'drum' in call
+229 |                 // Snare on 2 and 4
+230 |                 if beat == 1 || beat == 3 {
+231 |                     hits.append(DrumHit(
+    |                                        `- error: missing arguments for parameters 'time', 'drum' in call
+232 |                         position: Float(position),
+233 |                         velocity: 0.7,
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/InstrumentBrowserViewModel.swift:17:8: note: 'init(velocity:time:drum:)' declared here
+ 15 | }
+ 16 | 
+ 17 | struct DrumHit {
+    |        `- note: 'init(velocity:time:drum:)' declared here
+ 18 |     let velocity: Float
+ 19 |     let time: Float
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/TimelineViewModel.swift:250:25: error: value of type 'SynthController' has no member 'startPlayback'
+248 |         
+249 |         isPlaying = true
+250 |         synthController.startPlayback()
+    |                         `- error: value of type 'SynthController' has no member 'startPlayback'
+251 |         
+252 |         playbackTimer = Timer.scheduledTimer(withTimeInterval: 1.0/60.0, repeats: true) { [weak self] _ in
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/TimelineViewModel.swift:253:19: warning: call to main actor-isolated instance method 'updatePlayheadPosition()' in a synchronous nonisolated context; this is an error in the Swift 6 language mode
+251 |         
+252 |         playbackTimer = Timer.scheduledTimer(withTimeInterval: 1.0/60.0, repeats: true) { [weak self] _ in
+253 |             self?.updatePlayheadPosition()
+    |                   `- warning: call to main actor-isolated instance method 'updatePlayheadPosition()' in a synchronous nonisolated context; this is an error in the Swift 6 language mode
+254 |         }
+255 |     }
+    :
+304 |     }
+305 |     
+306 |     private func updatePlayheadPosition() {
+    |                  `- note: calls to instance method 'updatePlayheadPosition()' from outside of its actor context are implicitly asynchronous
+307 |         // Get current position from synth controller
+308 |         let position = synthController.getCurrentPosition()
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/TimelineViewModel.swift:261:25: error: value of type 'SynthController' has no member 'stopPlayback'
+259 |         
+260 |         isPlaying = false
+261 |         synthController.stopPlayback()
+    |                         `- error: value of type 'SynthController' has no member 'stopPlayback'
+262 |         
+263 |         playbackTimer?.invalidate()
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/TimelineViewModel.swift:276:25: error: value of type 'SynthController' has no member 'pausePlayback'
+274 |         
+275 |         isPlaying = false
+276 |         synthController.pausePlayback()
+    |                         `- error: value of type 'SynthController' has no member 'pausePlayback'
+277 |         
+278 |         playbackTimer?.invalidate()
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/TimelineViewModel.swift:288:25: error: value of type 'SynthController' has no member 'seekToPosition'
+286 |         playheadPosition = Double(clampedBar)
+287 |         
+288 |         synthController.seekToPosition(bar: clampedBar, beat: 0)
+    |                         `- error: value of type 'SynthController' has no member 'seekToPosition'
+289 |     }
+290 |     
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/TimelineViewModel.swift:302:29: error: value of type 'SynthController' has no member 'seekToPosition'
+300 |             playheadPosition = Double(newBar) + Double(newBeat) / Double(beatsPerBar)
+301 |             
+302 |             synthController.seekToPosition(bar: newBar, beat: newBeat)
+    |                             `- error: value of type 'SynthController' has no member 'seekToPosition'
+303 |         }
+304 |     }
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/TimelineViewModel.swift:308:40: error: value of type 'SynthController' has no member 'getCurrentPosition'
+306 |     private func updatePlayheadPosition() {
+307 |         // Get current position from synth controller
+308 |         let position = synthController.getCurrentPosition()
+    |                                        `- error: value of type 'SynthController' has no member 'getCurrentPosition'
+309 |         currentBar = position.bar
+310 |         currentBeat = position.beat
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/TimelineViewModel.swift:325:65: error: binary operator '<' cannot be applied to operands of type 'Int' and 'String'
+323 |         for (trackIndex, track) in tracks.enumerated() {
+324 |             for pattern in track.patterns {
+325 |                 if currentBar >= pattern.startBar && currentBar < pattern.startBar + pattern.length {
+    |                                                                 |- error: binary operator '<' cannot be applied to operands of type 'Int' and 'String'
+    |                                                                 `- note: overloads for '<' exist with these partially matching parameter lists: (Int, Int), (Int, Subscribers.Demand), (String, String)
+326 |                     let patternBar = currentBar - pattern.startBar
+327 |                     triggerPatternEvents(trackId: trackIndex, pattern: pattern, bar: patternBar, beat: currentBeat)
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/TimelineViewModel.swift:325:42: error: value of type 'TimelinePattern' has no member 'startBar'
+323 |         for (trackIndex, track) in tracks.enumerated() {
+324 |             for pattern in track.patterns {
+325 |                 if currentBar >= pattern.startBar && currentBar < pattern.startBar + pattern.length {
+    |                                          `- error: value of type 'TimelinePattern' has no member 'startBar'
+326 |                     let patternBar = currentBar - pattern.startBar
+327 |                     triggerPatternEvents(trackId: trackIndex, pattern: pattern, bar: patternBar, beat: currentBeat)
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/TimelineViewModel.swift:325:75: error: value of type 'TimelinePattern' has no member 'startBar'
+323 |         for (trackIndex, track) in tracks.enumerated() {
+324 |             for pattern in track.patterns {
+325 |                 if currentBar >= pattern.startBar && currentBar < pattern.startBar + pattern.length {
+    |                                                                           `- error: value of type 'TimelinePattern' has no member 'startBar'
+326 |                     let patternBar = currentBar - pattern.startBar
+327 |                     triggerPatternEvents(trackId: trackIndex, pattern: pattern, bar: patternBar, beat: currentBeat)
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/TimelineViewModel.swift:325:94: error: value of type 'TimelinePattern' has no member 'length'
+323 |         for (trackIndex, track) in tracks.enumerated() {
+324 |             for pattern in track.patterns {
+325 |                 if currentBar >= pattern.startBar && currentBar < pattern.startBar + pattern.length {
+    |                                                                                              `- error: value of type 'TimelinePattern' has no member 'length'
+326 |                     let patternBar = currentBar - pattern.startBar
+327 |                     triggerPatternEvents(trackId: trackIndex, pattern: pattern, bar: patternBar, beat: currentBeat)
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/TimelineViewModel.swift:326:59: error: value of type 'TimelinePattern' has no member 'startBar'
+324 |             for pattern in track.patterns {
+325 |                 if currentBar >= pattern.startBar && currentBar < pattern.startBar + pattern.length {
+326 |                     let patternBar = currentBar - pattern.startBar
+    |                                                           `- error: value of type 'TimelinePattern' has no member 'startBar'
+327 |                     triggerPatternEvents(trackId: trackIndex, pattern: pattern, bar: patternBar, beat: currentBeat)
+328 |                 }
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/TimelineViewModel.swift:334:24: error: value of type 'TimelinePattern' has no member 'data'
+332 |     
+333 |     private func triggerPatternEvents(trackId: Int, pattern: TimelinePattern, bar: Int, beat: Int) {
+334 |         switch pattern.data {
+    |                        `- error: value of type 'TimelinePattern' has no member 'data'
+335 |         case .notes(let notes):
+336 |             triggerNoteEvents(trackId: trackId, notes: notes, bar: bar, beat: beat)
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/TimelineViewModel.swift:348:25: error: value of type 'Note' has no member 'position'
+346 |         
+347 |         for note in notes {
+348 |             if abs(note.position - currentPosition) < 0.1 {
+    |                         `- error: value of type 'Note' has no member 'position'
+349 |                 synthController.triggerNote(
+350 |                     track: trackId,
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/TimelineViewModel.swift:349:44: error: extra arguments at positions #2, #3, #4 in call
+347 |         for note in notes {
+348 |             if abs(note.position - currentPosition) < 0.1 {
+349 |                 synthController.triggerNote(
+    |                                            `- error: extra arguments at positions #2, #3, #4 in call
+350 |                     track: trackId,
+351 |                     pitch: note.pitch,
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/SynthController.swift:360:10: note: 'triggerNote' declared here
+358 |     }
+359 |     
+360 |     func triggerNote(_ keyIndex: Int) {
+    |          `- note: 'triggerNote' declared here
+361 |         noteOn(keyIndex)
+362 |         
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/TimelineViewModel.swift:353:34: error: value of type 'Note' has no member 'length'
+351 |                     pitch: note.pitch,
+352 |                     velocity: note.velocity,
+353 |                     length: note.length
+    |                                  `- error: value of type 'Note' has no member 'length'
+354 |                 )
+355 |             }
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/TimelineViewModel.swift:363:24: error: value of type 'DrumHit' has no member 'position'
+361 |         
+362 |         for hit in hits {
+363 |             if abs(hit.position - currentPosition) < 0.1 {
+    |                        `- error: value of type 'DrumHit' has no member 'position'
+364 |                 // Apply probability
+365 |                 if Float.random(in: 0...1) <= hit.probability {
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/TimelineViewModel.swift:365:51: error: value of type 'DrumHit' has no member 'probability'
+363 |             if abs(hit.position - currentPosition) < 0.1 {
+364 |                 // Apply probability
+365 |                 if Float.random(in: 0...1) <= hit.probability {
+    |                                                   `- error: value of type 'DrumHit' has no member 'probability'
+366 |                     synthController.triggerDrumHit(
+367 |                         track: trackId,
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/TimelineViewModel.swift:366:37: error: value of type 'SynthController' has no member 'triggerDrumHit'
+364 |                 // Apply probability
+365 |                 if Float.random(in: 0...1) <= hit.probability {
+366 |                     synthController.triggerDrumHit(
+    |                                     `- error: value of type 'SynthController' has no member 'triggerDrumHit'
+367 |                         track: trackId,
+368 |                         drumSlot: hit.drumSlot,
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/TimelineViewModel.swift:368:39: error: value of type 'DrumHit' has no member 'drumSlot'
+366 |                     synthController.triggerDrumHit(
+367 |                         track: trackId,
+368 |                         drumSlot: hit.drumSlot,
+    |                                       `- error: value of type 'DrumHit' has no member 'drumSlot'
+369 |                         velocity: hit.velocity
+370 |                     )
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/TimelineViewModel.swift:380:26: error: value of type 'AutomationPoint' has no member 'position'
+378 |         
+379 |         for point in points {
+380 |             if abs(point.position - currentPosition) < 0.1 {
+    |                          `- error: value of type 'AutomationPoint' has no member 'position'
+381 |                 synthController.setAutomationValue(
+382 |                     track: trackId,
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/TimelineViewModel.swift:381:33: error: value of type 'SynthController' has no member 'setAutomationValue'
+379 |         for point in points {
+380 |             if abs(point.position - currentPosition) < 0.1 {
+381 |                 synthController.setAutomationValue(
+    |                                 `- error: value of type 'SynthController' has no member 'setAutomationValue'
+382 |                     track: trackId,
+383 |                     parameter: point.parameter,
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/TimelineViewModel.swift:383:38: error: value of type 'AutomationPoint' has no member 'parameter'
+381 |                 synthController.setAutomationValue(
+382 |                     track: trackId,
+383 |                     parameter: point.parameter,
+    |                                      `- error: value of type 'AutomationPoint' has no member 'parameter'
+384 |                     value: point.value
+385 |                 )
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/TimelineViewModel.swift:420:44: error: value of type 'TimelinePattern' has no member 'startBar'
+418 |         if let trackId = selectedTrack, !tracks[trackId].patterns.isEmpty {
+419 |             let patterns = tracks[trackId].patterns
+420 |             let minBar = patterns.map { $0.startBar }.min() ?? 0
+    |                                            `- error: value of type 'TimelinePattern' has no member 'startBar'
+421 |             let maxBar = patterns.map { $0.startBar + $0.length }.max() ?? totalBars
+422 |             
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/TimelineViewModel.swift:421:44: error: value of type 'TimelinePattern' has no member 'startBar'
+419 |             let patterns = tracks[trackId].patterns
+420 |             let minBar = patterns.map { $0.startBar }.min() ?? 0
+421 |             let maxBar = patterns.map { $0.startBar + $0.length }.max() ?? totalBars
+    |                                            `- error: value of type 'TimelinePattern' has no member 'startBar'
+422 |             
+423 |             // Calculate zoom to fit selection
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/TimelineViewModel.swift:421:58: error: value of type 'TimelinePattern' has no member 'length'
+419 |             let patterns = tracks[trackId].patterns
+420 |             let minBar = patterns.map { $0.startBar }.min() ?? 0
+421 |             let maxBar = patterns.map { $0.startBar + $0.length }.max() ?? totalBars
+    |                                                          `- error: value of type 'TimelinePattern' has no member 'length'
+422 |             
+423 |             // Calculate zoom to fit selection
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/TimelineViewModel.swift:421:53: error: cannot convert value of type 'String' to closure result type 'Int'
+419 |             let patterns = tracks[trackId].patterns
+420 |             let minBar = patterns.map { $0.startBar }.min() ?? 0
+421 |             let maxBar = patterns.map { $0.startBar + $0.length }.max() ?? totalBars
+    |                                                     `- error: cannot convert value of type 'String' to closure result type 'Int'
+422 |             
+423 |             // Calculate zoom to fit selection
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/TimelineViewModel.swift:434:19: warning: call to main actor-isolated instance method 'updatePerformanceMetrics()' in a synchronous nonisolated context; this is an error in the Swift 6 language mode
+432 |     private func startPerformanceMonitoring() {
+433 |         performanceTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in
+434 |             self?.updatePerformanceMetrics()
+    |                   `- warning: call to main actor-isolated instance method 'updatePerformanceMetrics()' in a synchronous nonisolated context; this is an error in the Swift 6 language mode
+435 |         }
+436 |     }
+    :
+441 |     }
+442 |     
+443 |     private func updatePerformanceMetrics() {
+    |                  `- note: calls to instance method 'updatePerformanceMetrics()' from outside of its actor context are implicitly asynchronous
+444 |         let metrics = synthController.getPerformanceMetrics()
+445 |         
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/TimelineViewModel.swift:444:39: error: value of type 'SynthController' has no member 'getPerformanceMetrics'
+442 |     
+443 |     private func updatePerformanceMetrics() {
+444 |         let metrics = synthController.getPerformanceMetrics()
+    |                                       `- error: value of type 'SynthController' has no member 'getPerformanceMetrics'
+445 |         
+446 |         cpuUsage = metrics.cpuUsage
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/TimelineViewModel.swift:512:8: error: type 'ProjectData' does not conform to protocol 'Decodable'
+510 | // MARK: - Data Models for Export/Import
+511 | 
+512 | struct ProjectData: Codable {
+    |        `- error: type 'ProjectData' does not conform to protocol 'Decodable'
+513 |     let tracks: [TimelineTrack]
+    |         `- note: cannot automatically synthesize 'Decodable' because '[TimelineTrack]' does not conform to 'Decodable'
+514 |     let totalBars: Int
+515 |     let loopStart: Int
+516 |     let loopEnd: Int
+517 |     let gridResolution: TimelineViewModel.GridResolution
+    |         `- note: cannot automatically synthesize 'Decodable' because 'TimelineViewModel.GridResolution' does not conform to 'Decodable'
+518 | }
+519 | 
+
+Swift.Decodable.init:2:1: note: protocol requires initializer 'init(from:)' with type 'Decodable'
+1 | protocol Decodable {
+2 | init(from decoder: any Decoder) throws}
+  | `- note: protocol requires initializer 'init(from:)' with type 'Decodable'
+3 | 
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/TimelineViewModel.swift:473:39: error: value of type 'TimelineTrack' has no member 'assignedEngine'
+471 |         // Update synth controller with new track configuration
+472 |         for (index, track) in tracks.enumerated() {
+473 |             if let engineType = track.assignedEngine {
+    |                                       `- error: value of type 'TimelineTrack' has no member 'assignedEngine'
+474 |                 synthController.assignEngineToTrack(track: index, engineType: engineType)
+475 |             }
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/TimelineViewModel.swift:474:33: error: value of type 'SynthController' has no member 'assignEngineToTrack'
+472 |         for (index, track) in tracks.enumerated() {
+473 |             if let engineType = track.assignedEngine {
+474 |                 synthController.assignEngineToTrack(track: index, engineType: engineType)
+    |                                 `- error: value of type 'SynthController' has no member 'assignEngineToTrack'
+475 |             }
+476 |             synthController.setTrackVolume(track: index, volume: track.volume)
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/TimelineViewModel.swift:476:29: error: value of type 'SynthController' has no member 'setTrackVolume'
+474 |                 synthController.assignEngineToTrack(track: index, engineType: engineType)
+475 |             }
+476 |             synthController.setTrackVolume(track: index, volume: track.volume)
+    |                             `- error: value of type 'SynthController' has no member 'setTrackVolume'
+477 |             synthController.setTrackMute(track: index, muted: track.isMuted)
+478 |         }
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/TimelineViewModel.swift:477:29: error: value of type 'SynthController' has no member 'setTrackMute'
+475 |             }
+476 |             synthController.setTrackVolume(track: index, volume: track.volume)
+477 |             synthController.setTrackMute(track: index, muted: track.isMuted)
+    |                             `- error: value of type 'SynthController' has no member 'setTrackMute'
+478 |         }
+479 |     }
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/TimelineViewModel.swift:477:69: error: value of type 'TimelineTrack' has no member 'isMuted'
+475 |             }
+476 |             synthController.setTrackVolume(track: index, volume: track.volume)
+477 |             synthController.setTrackMute(track: index, muted: track.isMuted)
+    |                                                                     `- error: value of type 'TimelineTrack' has no member 'isMuted'
+478 |         }
+479 |     }
+[5/17] Compiling EtherSynth InstrumentBrowserViewModel.swift
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/InstrumentBrowserViewModel.swift:44:41: error: 'EngineMetrics' is ambiguous for type lookup in this context
+ 42 |     
+ 43 |     // Performance metrics for engines
+ 44 |     @Published var engineMetrics: [Int: EngineMetrics] = [:]
+    |                                         `- error: 'EngineMetrics' is ambiguous for type lookup in this context
+ 45 |     
+ 46 |     private var synthController: SynthController
+    :
+459 | // MARK: - Supporting Data Models
+460 | 
+461 | struct EngineMetrics {
+    |        `- note: found this candidate
+462 |     let cpuUsage: Float
+463 |     let memoryUsage: Float
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/EngineAssignmentOverlay.swift:16:8: note: found this candidate
+ 14 | }
+ 15 | 
+ 16 | struct EngineMetrics {
+    |        `- note: found this candidate
+ 17 |     let cpuUsage: Float
+ 18 |     let memoryUsage: Float
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/InstrumentBrowserViewModel.swift:461:8: error: invalid redeclaration of 'EngineMetrics'
+459 | // MARK: - Supporting Data Models
+460 | 
+461 | struct EngineMetrics {
+    |        `- error: invalid redeclaration of 'EngineMetrics'
+462 |     let cpuUsage: Float
+463 |     let memoryUsage: Float
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/InstrumentBrowserViewModel.swift:470:18: error: 'EngineMetrics' is ambiguous for type lookup in this context
+459 | // MARK: - Supporting Data Models
+460 | 
+461 | struct EngineMetrics {
+    |        `- note: found this candidate
+462 |     let cpuUsage: Float
+463 |     let memoryUsage: Float
+    :
+468 | struct EngineDetails {
+469 |     let engine: EngineInfo
+470 |     let metrics: EngineMetrics
+    |                  `- error: 'EngineMetrics' is ambiguous for type lookup in this context
+471 |     let tracksUsing: [Int]
+472 |     let parameters: [ParameterInfo]
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/EngineAssignmentOverlay.swift:16:8: note: found this candidate
+ 14 | }
+ 15 | 
+ 16 | struct EngineMetrics {
+    |        `- note: found this candidate
+ 17 |     let cpuUsage: Float
+ 18 |     let memoryUsage: Float
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/InstrumentBrowserViewModel.swift:76:24: error: value of type 'EngineInfo' has no member 'description'
+ 74 |             filtered = filtered.filter { engine in
+ 75 |                 engine.name.localizedCaseInsensitiveContains(searchText) ||
+ 76 |                 engine.description.localizedCaseInsensitiveContains(searchText) ||
+    |                        `- error: value of type 'EngineInfo' has no member 'description'
+ 77 |                 engine.tags.contains { $0.localizedCaseInsensitiveContains(searchText) }
+ 78 |             }
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/InstrumentBrowserViewModel.swift:77:24: error: value of type 'EngineInfo' has no member 'tags'
+ 75 |                 engine.name.localizedCaseInsensitiveContains(searchText) ||
+ 76 |                 engine.description.localizedCaseInsensitiveContains(searchText) ||
+ 77 |                 engine.tags.contains { $0.localizedCaseInsensitiveContains(searchText) }
+    |                        `- error: value of type 'EngineInfo' has no member 'tags'
+ 78 |             }
+ 79 |         }
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/InstrumentBrowserViewModel.swift:132:9: error: call to main actor-isolated instance method 'stopMetricsMonitoring()' in a synchronous nonisolated context
+130 |     
+131 |     deinit {
+132 |         stopMetricsMonitoring()
+    |         `- error: call to main actor-isolated instance method 'stopMetricsMonitoring()' in a synchronous nonisolated context
+133 |         saveUserPreferences()
+134 |     }
+    :
+283 |     }
+284 |     
+285 |     private func stopMetricsMonitoring() {
+    |                  `- note: calls to instance method 'stopMetricsMonitoring()' from outside of its actor context are implicitly asynchronous
+286 |         metricsTimer?.invalidate()
+287 |         metricsTimer = nil
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/InstrumentBrowserViewModel.swift:133:9: error: call to main actor-isolated instance method 'saveUserPreferences()' in a synchronous nonisolated context
+131 |     deinit {
+132 |         stopMetricsMonitoring()
+133 |         saveUserPreferences()
+    |         `- error: call to main actor-isolated instance method 'saveUserPreferences()' in a synchronous nonisolated context
+134 |     }
+135 |     
+    :
+345 |     }
+346 |     
+347 |     private func saveUserPreferences() {
+    |                  `- note: calls to instance method 'saveUserPreferences()' from outside of its actor context are implicitly asynchronous
+348 |         let preferences = BrowserPreferences(
+349 |             favoriteEngines: Array(favoriteEngines),
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/InstrumentBrowserViewModel.swift:142:43: error: value of type 'SynthController' has no member 'getEngineCount'
+140 |         
+141 |         // Load engines from synth controller
+142 |         let engineCount = synthController.getEngineCount()
+    |                                           `- error: value of type 'SynthController' has no member 'getEngineCount'
+143 |         engines = (0..<engineCount).compactMap { index in
+144 |             synthController.getEngineInfo(index: index)
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/InstrumentBrowserViewModel.swift:144:29: error: value of type 'SynthController' has no member 'getEngineInfo'
+142 |         let engineCount = synthController.getEngineCount()
+143 |         engines = (0..<engineCount).compactMap { index in
+144 |             synthController.getEngineInfo(index: index)
+    |                             `- error: value of type 'SynthController' has no member 'getEngineInfo'
+145 |         }
+146 |         
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/InstrumentBrowserViewModel.swift:258:39: error: value of type 'SynthController' has no member 'assignEngineToTrack'
+256 |         }
+257 |         
+258 |         let success = synthController.assignEngineToTrack(track: trackId, engineType: engineId)
+    |                                       `- error: value of type 'SynthController' has no member 'assignEngineToTrack'
+259 |         if success {
+260 |             addToRecent(engineId: engineId)
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/InstrumentBrowserViewModel.swift:269:32: error: value of type 'SynthController' has no member 'canAssignEngineToTrack'
+267 |     func canAssignToTrack(engineId: Int, trackId: Int) -> Bool {
+268 |         // Check if track is available and engine is compatible
+269 |         return synthController.canAssignEngineToTrack(track: trackId, engineType: engineId)
+    |                                `- error: value of type 'SynthController' has no member 'canAssignEngineToTrack'
+270 |     }
+271 |     
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/InstrumentBrowserViewModel.swift:274:32: error: value of type 'SynthController' has no member 'getTracksUsingEngine'
+272 |     func getEngineUsage(engineId: Int) -> [Int] {
+273 |         // Return list of tracks using this engine
+274 |         return synthController.getTracksUsingEngine(engineType: engineId)
+    |                                `- error: value of type 'SynthController' has no member 'getTracksUsingEngine'
+275 |     }
+276 |     
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/InstrumentBrowserViewModel.swift:281:19: warning: call to main actor-isolated instance method 'updateAllEngineMetrics()' in a synchronous nonisolated context; this is an error in the Swift 6 language mode
+279 |     private func startMetricsMonitoring() {
+280 |         metricsTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
+281 |             self?.updateAllEngineMetrics()
+    |                   `- warning: call to main actor-isolated instance method 'updateAllEngineMetrics()' in a synchronous nonisolated context; this is an error in the Swift 6 language mode
+282 |         }
+283 |     }
+    :
+288 |     }
+289 |     
+290 |     private func updateAllEngineMetrics() {
+    |                  `- note: calls to instance method 'updateAllEngineMetrics()' from outside of its actor context are implicitly asynchronous
+291 |         for engine in engines {
+292 |             updateEngineMetrics(engineId: engine.id)
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/InstrumentBrowserViewModel.swift:297:39: error: value of type 'SynthController' has no member 'getEngineMetrics'
+295 |     
+296 |     private func updateEngineMetrics(engineId: Int) {
+297 |         let metrics = synthController.getEngineMetrics(engineType: engineId)
+    |                                       `- error: value of type 'SynthController' has no member 'getEngineMetrics'
+298 |         engineMetrics[engineId] = EngineMetrics(
+299 |             cpuUsage: metrics.cpuUsage,
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/InstrumentBrowserViewModel.swift:302:32: error: extra argument 'polyphony' in call
+300 |             memoryUsage: metrics.memoryUsage,
+301 |             voiceCount: metrics.voiceCount,
+302 |             polyphony: metrics.maxPolyphony
+    |                                `- error: extra argument 'polyphony' in call
+303 |         )
+304 |     }
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/InstrumentBrowserViewModel.swift:309:32: error: value of type 'SynthController' has no member 'getEnginePresets'
+307 |     
+308 |     func getPresetsForEngine(_ engineId: Int) -> [PresetInfo] {
+309 |         return synthController.getEnginePresets(engineType: engineId)
+    |                                `- error: value of type 'SynthController' has no member 'getEnginePresets'
+310 |     }
+311 |     
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/InstrumentBrowserViewModel.swift:313:32: error: value of type 'SynthController' has no member 'loadEnginePreset'
+311 |     
+312 |     func loadPreset(engineId: Int, presetId: String) -> Bool {
+313 |         return synthController.loadEnginePreset(engineType: engineId, presetId: presetId)
+    |                                `- error: value of type 'SynthController' has no member 'loadEnginePreset'
+314 |     }
+315 |     
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/InstrumentBrowserViewModel.swift:317:32: error: value of type 'SynthController' has no member 'saveEnginePreset'
+315 |     
+316 |     func savePreset(engineId: Int, name: String, description: String) -> Bool {
+317 |         return synthController.saveEnginePreset(engineType: engineId, name: name, description: description)
+    |                                `- error: value of type 'SynthController' has no member 'saveEnginePreset'
+318 |     }
+319 |     
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/InstrumentBrowserViewModel.swift:323:25: error: value of type 'SynthController' has no member 'startEnginePreview'
+321 |     
+322 |     func startPreview(engineId: Int) {
+323 |         synthController.startEnginePreview(engineType: engineId)
+    |                         `- error: value of type 'SynthController' has no member 'startEnginePreview'
+324 |     }
+325 |     
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/InstrumentBrowserViewModel.swift:327:25: error: value of type 'SynthController' has no member 'stopEnginePreview'
+325 |     
+326 |     func stopPreview() {
+327 |         synthController.stopEnginePreview()
+    |                         `- error: value of type 'SynthController' has no member 'stopEnginePreview'
+328 |     }
+329 |     
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/InstrumentBrowserViewModel.swift:331:32: error: value of type 'SynthController' has no member 'isEnginePreviewPlaying'
+329 |     
+330 |     func isPreviewPlaying(engineId: Int) -> Bool {
+331 |         return synthController.isEnginePreviewPlaying(engineType: engineId)
+    |                                `- error: value of type 'SynthController' has no member 'isEnginePreviewPlaying'
+332 |     }
+333 |     
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/InstrumentBrowserViewModel.swift:385:40: error: extra arguments at positions #1, #3, #4 in call
+ 15 | }
+ 16 | 
+ 17 | struct DrumHit {
+    |        `- note: 'init(velocity:time:drum:)' declared here
+ 18 |     let velocity: Float
+ 19 |     let time: Float
+    :
+383 |                 
+384 |                 if beat == 0 || beat == 2 {
+385 |                     hits.append(DrumHit(
+    |                                        `- error: extra arguments at positions #1, #3, #4 in call
+386 |                         position: position,
+387 |                         velocity: 0.8,
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/InstrumentBrowserViewModel.swift:385:40: error: missing arguments for parameters 'time', 'drum' in call
+ 15 | }
+ 16 | 
+ 17 | struct DrumHit {
+    |        `- note: 'init(velocity:time:drum:)' declared here
+ 18 |     let velocity: Float
+ 19 |     let time: Float
+    :
+383 |                 
+384 |                 if beat == 0 || beat == 2 {
+385 |                     hits.append(DrumHit(
+    |                                        `- error: missing arguments for parameters 'time', 'drum' in call
+386 |                         position: position,
+387 |                         velocity: 0.8,
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/InstrumentBrowserViewModel.swift:394:40: error: extra arguments at positions #1, #3, #4 in call
+ 15 | }
+ 16 | 
+ 17 | struct DrumHit {
+    |        `- note: 'init(velocity:time:drum:)' declared here
+ 18 |     let velocity: Float
+ 19 |     let time: Float
+    :
+392 |                 
+393 |                 if beat == 1 || beat == 3 {
+394 |                     hits.append(DrumHit(
+    |                                        `- error: extra arguments at positions #1, #3, #4 in call
+395 |                         position: position,
+396 |                         velocity: 0.7,
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/InstrumentBrowserViewModel.swift:394:40: error: missing arguments for parameters 'time', 'drum' in call
+ 15 | }
+ 16 | 
+ 17 | struct DrumHit {
+    |        `- note: 'init(velocity:time:drum:)' declared here
+ 18 |     let velocity: Float
+ 19 |     let time: Float
+    :
+392 |                 
+393 |                 if beat == 1 || beat == 3 {
+394 |                     hits.append(DrumHit(
+    |                                        `- error: missing arguments for parameters 'time', 'drum' in call
+395 |                         position: position,
+396 |                         velocity: 0.7,
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/InstrumentBrowserViewModel.swift:404:17: error: type 'PatternData' has no member 'drums'
+402 |         }
+403 |         
+404 |         return .drums(hits)
+    |                 `- error: type 'PatternData' has no member 'drums'
+405 |     }
+406 |     
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/InstrumentBrowserViewModel.swift:416:27: error: extra argument 'position' in call
+414 |             
+415 |             notes.append(Note(
+416 |                 position: position,
+    |                           `- error: extra argument 'position' in call
+417 |                 pitch: pitch,
+418 |                 velocity: 0.7,
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/InstrumentBrowserViewModel.swift:417:29: error: missing argument for parameter 'startTime' in call
+ 21 | }
+ 22 | 
+ 23 | struct Note {
+    |        `- note: 'init(pitch:velocity:startTime:duration:)' declared here
+ 24 |     let pitch: Int
+ 25 |     let velocity: Float
+    :
+415 |             notes.append(Note(
+416 |                 position: position,
+417 |                 pitch: pitch,
+    |                             `- error: missing argument for parameter 'startTime' in call
+418 |                 velocity: 0.7,
+419 |                 length: 0.4
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/InstrumentBrowserViewModel.swift:423:17: error: instance member 'notes' cannot be used on type 'PatternData'
+421 |         }
+422 |         
+423 |         return .notes(notes)
+    |                 `- error: instance member 'notes' cannot be used on type 'PatternData'
+424 |     }
+425 |     
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/InstrumentBrowserViewModel.swift:423:17: error: cannot call value of non-function type '[Note]'
+421 |         }
+422 |         
+423 |         return .notes(notes)
+    |                 `- error: cannot call value of non-function type '[Note]'
+424 |     }
+425 |     
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/InstrumentBrowserViewModel.swift:431:25: error: value of type 'SynthController' has no member 'createPattern'
+429 |         // This would typically be handled by the timeline view model
+430 |         // For now, we'll just trigger the synth controller to create a pattern
+431 |         synthController.createPattern(track: trackId, data: patternData)
+    |                         `- error: value of type 'SynthController' has no member 'createPattern'
+432 |     }
+433 |     
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/InstrumentBrowserViewModel.swift:439:39: error: value of type 'SynthController' has no member 'getEngineDetails'
+437 |         guard let engine = engines.first(where: { $0.id == engineId }) else { return nil }
+438 |         
+439 |         let details = synthController.getEngineDetails(engineType: engineId)
+    |                                       `- error: value of type 'SynthController' has no member 'getEngineDetails'
+440 |         let metrics = engineMetrics[engineId] ?? EngineMetrics(cpuUsage: 0, memoryUsage: 0, voiceCount: 0, polyphony: 16)
+441 |         let usage = getEngineUsage(engineId: engineId)
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/InstrumentBrowserViewModel.swift:440:119: error: extra argument 'polyphony' in call
+438 |         
+439 |         let details = synthController.getEngineDetails(engineType: engineId)
+440 |         let metrics = engineMetrics[engineId] ?? EngineMetrics(cpuUsage: 0, memoryUsage: 0, voiceCount: 0, polyphony: 16)
+    |                                                                                                                       `- error: extra argument 'polyphony' in call
+441 |         let usage = getEngineUsage(engineId: engineId)
+442 |         
+error: emit-module command failed with exit code 1 (use -v to see invocation)
+[6/17] Emitting module EtherSynth
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/EngineAssignmentOverlay.swift:16:8: error: invalid redeclaration of 'EngineMetrics'
+ 14 | }
+ 15 | 
+ 16 | struct EngineMetrics {
+    |        `- error: invalid redeclaration of 'EngineMetrics'
+ 17 |     let cpuUsage: Float
+ 18 |     let memoryUsage: Float
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/EtherSynth.swift:433:8: error: invalid redeclaration of 'BreadcrumbNavigation'
+ 431 | 
+ 432 | // MARK: - Breadcrumb Navigation
+ 433 | struct BreadcrumbNavigation: View {
+     |        `- error: invalid redeclaration of 'BreadcrumbNavigation'
+ 434 |     @EnvironmentObject var synthController: SynthController
+ 435 |     
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/InstrumentBrowserViewModel.swift:44:41: error: 'EngineMetrics' is ambiguous for type lookup in this context
+ 42 |     
+ 43 |     // Performance metrics for engines
+ 44 |     @Published var engineMetrics: [Int: EngineMetrics] = [:]
+    |                                         `- error: 'EngineMetrics' is ambiguous for type lookup in this context
+ 45 |     
+ 46 |     private var synthController: SynthController
+    :
+459 | // MARK: - Supporting Data Models
+460 | 
+461 | struct EngineMetrics {
+    |        `- note: found this candidate
+462 |     let cpuUsage: Float
+463 |     let memoryUsage: Float
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/EngineAssignmentOverlay.swift:16:8: note: found this candidate
+ 14 | }
+ 15 | 
+ 16 | struct EngineMetrics {
+    |        `- note: found this candidate
+ 17 |     let cpuUsage: Float
+ 18 |     let memoryUsage: Float
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/InstrumentBrowserViewModel.swift:470:18: error: 'EngineMetrics' is ambiguous for type lookup in this context
+459 | // MARK: - Supporting Data Models
+460 | 
+461 | struct EngineMetrics {
+    |        `- note: found this candidate
+462 |     let cpuUsage: Float
+463 |     let memoryUsage: Float
+    :
+468 | struct EngineDetails {
+469 |     let engine: EngineInfo
+470 |     let metrics: EngineMetrics
+    |                  `- error: 'EngineMetrics' is ambiguous for type lookup in this context
+471 |     let tracksUsing: [Int]
+472 |     let parameters: [ParameterInfo]
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/EngineAssignmentOverlay.swift:16:8: note: found this candidate
+ 14 | }
+ 15 | 
+ 16 | struct EngineMetrics {
+    |        `- note: found this candidate
+ 17 |     let cpuUsage: Float
+ 18 |     let memoryUsage: Float
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/SynthControllerViewModel.swift:572:8: error: invalid redeclaration of 'PerformanceMetrics'
+570 | }
+571 | 
+572 | struct PerformanceMetrics {
+    |        `- error: invalid redeclaration of 'PerformanceMetrics'
+573 |     let cpuUsage: Float
+574 |     let memoryUsage: Float
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/TimelineViewModel.swift:512:8: error: type 'ProjectData' does not conform to protocol 'Decodable'
+510 | // MARK: - Data Models for Export/Import
+511 | 
+512 | struct ProjectData: Codable {
+    |        `- error: type 'ProjectData' does not conform to protocol 'Decodable'
+513 |     let tracks: [TimelineTrack]
+    |         `- note: cannot automatically synthesize 'Decodable' because '[TimelineTrack]' does not conform to 'Decodable'
+514 |     let totalBars: Int
+515 |     let loopStart: Int
+516 |     let loopEnd: Int
+517 |     let gridResolution: TimelineViewModel.GridResolution
+    |         `- note: cannot automatically synthesize 'Decodable' because 'TimelineViewModel.GridResolution' does not conform to 'Decodable'
+518 | }
+519 | 
+
+Swift.Decodable.init:2:1: note: protocol requires initializer 'init(from:)' with type 'Decodable'
+1 | protocol Decodable {
+2 | init(from decoder: any Decoder) throws}
+  | `- note: protocol requires initializer 'init(from:)' with type 'Decodable'
+3 | 
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/TimelineViewModel.swift:512:8: error: type 'ProjectData' does not conform to protocol 'Encodable'
+510 | // MARK: - Data Models for Export/Import
+511 | 
+512 | struct ProjectData: Codable {
+    |        `- error: type 'ProjectData' does not conform to protocol 'Encodable'
+513 |     let tracks: [TimelineTrack]
+    |         `- note: cannot automatically synthesize 'Encodable' because '[TimelineTrack]' does not conform to 'Encodable'
+514 |     let totalBars: Int
+515 |     let loopStart: Int
+516 |     let loopEnd: Int
+517 |     let gridResolution: TimelineViewModel.GridResolution
+    |         `- note: cannot automatically synthesize 'Encodable' because 'TimelineViewModel.GridResolution' does not conform to 'Encodable'
+518 | }
+519 | 
+
+Swift.Encodable.encode:2:6: note: protocol requires function 'encode(to:)' with type 'Encodable'
+1 | protocol Encodable {
+2 | func encode(to encoder: any Encoder) throws}
+  |      `- note: protocol requires function 'encode(to:)' with type 'Encodable'
+3 | 
+[7/17] Compiling EtherSynth SoundOverlay.swift
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/SoundOverlay.swift:123:25: error: value of type 'SynthController' has no dynamic member 'setParameter' using key path from root type 'SynthController'
+121 |     private func updateParameter(paramId: String, value: Float) {
+122 |         // Update synth controller with new parameter value
+123 |         synthController.setParameter(paramId: paramId, value: value)
+    |                         `- error: value of type 'SynthController' has no dynamic member 'setParameter' using key path from root type 'SynthController'
+124 |     }
+125 |     
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/SoundOverlay.swift:123:9: error: referencing subscript 'subscript(dynamicMember:)' requires wrapper 'EnvironmentObject<SynthController>.Wrapper'
+121 |     private func updateParameter(paramId: String, value: Float) {
+122 |         // Update synth controller with new parameter value
+123 |         synthController.setParameter(paramId: paramId, value: value)
+    |         `- error: referencing subscript 'subscript(dynamicMember:)' requires wrapper 'EnvironmentObject<SynthController>.Wrapper'
+124 |     }
+125 |     
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/SoundOverlay.swift:123:25: error: cannot call value of non-function type 'Binding<Subject>'
+121 |     private func updateParameter(paramId: String, value: Float) {
+122 |         // Update synth controller with new parameter value
+123 |         synthController.setParameter(paramId: paramId, value: value)
+    |                         `- error: cannot call value of non-function type 'Binding<Subject>'
+124 |     }
+125 |     
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/SoundOverlay.swift:449:61: error: value of type 'CGSize' has no member 'y'
+447 |                         }
+448 |                         
+449 |                         let delta = Float(value.translation.y - dragOffset) * -sensitivity
+    |                                                             `- error: value of type 'CGSize' has no member 'y'
+450 |                         let newValue = clamp(parameter.value + delta, to: parameter.range)
+451 |                         onValueChange(newValue)
+[8/17] Compiling EtherSynth EtherSynth.swift
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/EtherSynth.swift:433:8: error: invalid redeclaration of 'BreadcrumbNavigation'
+ 431 | 
+ 432 | // MARK: - Breadcrumb Navigation
+ 433 | struct BreadcrumbNavigation: View {
+     |        `- error: invalid redeclaration of 'BreadcrumbNavigation'
+ 434 |     @EnvironmentObject var synthController: SynthController
+ 435 |     
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/EtherSynth.swift:412:33: error: missing arguments for parameters 'pathComponents', 'onNavigate' in call
+ 410 |         VStack(spacing: 0) {
+ 411 |             // Breadcrumb Navigation
+ 412 |             BreadcrumbNavigation()
+     |                                 `- error: missing arguments for parameters 'pathComponents', 'onNavigate' in call
+ 413 |                 .padding(.bottom, 8)
+ 414 |             
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/LoopBrowser.swift:501:8: note: 'init(pathComponents:onNavigate:)' declared here
+ 499 | 
+ 500 | // MARK: - Breadcrumb Navigation
+ 501 | struct BreadcrumbNavigation: View {
+     |        `- note: 'init(pathComponents:onNavigate:)' declared here
+ 502 |     let pathComponents: [String]
+ 503 |     let onNavigate: (String) -> Void
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/EtherSynth.swift:1547:24: warning: value 'position' was defined but never used; consider replacing with boolean test
+1545 |             .onAppear {
+1546 |                 // Restore scroll position for this instrument
+1547 |                 if let position = synthController.instrumentScrollPositions[synthController.activeInstrument] {
+     |                        `- warning: value 'position' was defined but never used; consider replacing with boolean test
+1548 |                     proxy.scrollTo("pattern", anchor: .center)
+1549 |                 }
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/EtherSynth.swift:1771:24: warning: value 'position' was defined but never used; consider replacing with boolean test
+1769 |             .onAppear {
+1770 |                 // Restore scroll position for this LFO
+1771 |                 if let position = synthController.lfoScrollPositions[synthController.selectedLFO] {
+     |                        `- warning: value 'position' was defined but never used; consider replacing with boolean test
+1772 |                     proxy.scrollTo("parameters", anchor: .center)
+1773 |                 }
+[9/17] Compiling EtherSynth MixPage.swift
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/MixPage.swift:772:35: error: expected ',' separator
+ 770 |                 }
+ 771 |                 .padding(.horizontal, 4)
+ 772 |                 .padding(.vertical: 2)
+     |                                   `- error: expected ',' separator
+ 773 |                 .background(
+ 774 |                     RoundedRectangle(cornerRadius: 3)
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/MixPage.swift:772:35: error: expected argument label before colon
+ 770 |                 }
+ 771 |                 .padding(.horizontal, 4)
+ 772 |                 .padding(.vertical: 2)
+     |                                   `- error: expected argument label before colon
+ 773 |                 .background(
+ 774 |                     RoundedRectangle(cornerRadius: 3)
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/MixPage.swift:1183:45: error: expected ',' separator
+1181 |                         .font(.system(size: 10, weight: .medium))
+1182 |                         .foregroundColor(.blue)
+1183 |                         .padding(.horizontal: 8)
+     |                                             `- error: expected ',' separator
+1184 |                         .padding(.vertical, 4)
+1185 |                         .background(
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/MixPage.swift:1183:45: error: expected argument label before colon
+1181 |                         .font(.system(size: 10, weight: .medium))
+1182 |                         .foregroundColor(.blue)
+1183 |                         .padding(.horizontal: 8)
+     |                                             `- error: expected argument label before colon
+1184 |                         .padding(.vertical, 4)
+1185 |                         .background(
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/MixPage.swift:677:18: error: 'fill(_:style:)' is only available in macOS 14.0 or newer
+ 496 | 
+ 497 | // MARK: - Channel Strip View
+ 498 | struct ChannelStripView: View {
+     |        `- note: add @available attribute to enclosing struct
+ 499 |     @Binding var channel: ChannelStrip
+ 500 |     let isSelected: Bool
+     :
+ 507 |     let onParameterChange: (String, Float) -> Void
+ 508 |     
+ 509 |     var body: some View {
+     |         `- note: add @available attribute to enclosing property
+ 510 |         VStack(spacing: 8) {
+ 511 |             // Channel Header
+     :
+ 675 |         .background(
+ 676 |             RoundedRectangle(cornerRadius: 8)
+ 677 |                 .fill(isSelected ? channel.color.pastelColor.opacity(0.1) : Color.clear)
+     |                  |- error: 'fill(_:style:)' is only available in macOS 14.0 or newer
+     |                  `- note: add 'if #available' version check
+ 678 |                 .stroke(isSelected ? channel.color.pastelColor : Color.gray.opacity(0.2), lineWidth: 1)
+ 679 |         )
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/MixPage.swift:678:18: error: 'stroke(_:lineWidth:antialiased:)' is only available in macOS 14.0 or newer
+ 496 | 
+ 497 | // MARK: - Channel Strip View
+ 498 | struct ChannelStripView: View {
+     |        `- note: add @available attribute to enclosing struct
+ 499 |     @Binding var channel: ChannelStrip
+ 500 |     let isSelected: Bool
+     :
+ 507 |     let onParameterChange: (String, Float) -> Void
+ 508 |     
+ 509 |     var body: some View {
+     |         `- note: add @available attribute to enclosing property
+ 510 |         VStack(spacing: 8) {
+ 511 |             // Channel Header
+     :
+ 676 |             RoundedRectangle(cornerRadius: 8)
+ 677 |                 .fill(isSelected ? channel.color.pastelColor.opacity(0.1) : Color.clear)
+ 678 |                 .stroke(isSelected ? channel.color.pastelColor : Color.gray.opacity(0.2), lineWidth: 1)
+     |                  |- error: 'stroke(_:lineWidth:antialiased:)' is only available in macOS 14.0 or newer
+     |                  `- note: add 'if #available' version check
+ 679 |         )
+ 680 |     }
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/MixPage.swift:1008:22: error: 'fill(_:style:)' is only available in macOS 14.0 or newer
+ 968 | 
+ 969 | // MARK: - Master Strip View
+ 970 | struct MasterStripView: View {
+     |        `- note: add @available attribute to enclosing struct
+ 971 |     @Binding var masterBus: MasterBus
+ 972 |     let meteringMode: MixPage.MeteringMode
+ 973 |     let onParameterChange: (String, Float) -> Void
+ 974 |     
+ 975 |     var body: some View {
+     |         `- note: add @available attribute to enclosing property
+ 976 |         VStack(spacing: 12) {
+ 977 |             // Master Header
+     :
+1006 |             .background(
+1007 |                 RoundedRectangle(cornerRadius: 6)
+1008 |                     .fill(Color.orange.opacity(0.05))
+     |                      |- error: 'fill(_:style:)' is only available in macOS 14.0 or newer
+     |                      `- note: add 'if #available' version check
+1009 |                     .stroke(Color.orange.opacity(0.2), lineWidth: 1)
+1010 |             )
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/MixPage.swift:1009:22: error: 'stroke(_:lineWidth:antialiased:)' is only available in macOS 14.0 or newer
+ 968 | 
+ 969 | // MARK: - Master Strip View
+ 970 | struct MasterStripView: View {
+     |        `- note: add @available attribute to enclosing struct
+ 971 |     @Binding var masterBus: MasterBus
+ 972 |     let meteringMode: MixPage.MeteringMode
+ 973 |     let onParameterChange: (String, Float) -> Void
+ 974 |     
+ 975 |     var body: some View {
+     |         `- note: add @available attribute to enclosing property
+ 976 |         VStack(spacing: 12) {
+ 977 |             // Master Header
+     :
+1007 |                 RoundedRectangle(cornerRadius: 6)
+1008 |                     .fill(Color.orange.opacity(0.05))
+1009 |                     .stroke(Color.orange.opacity(0.2), lineWidth: 1)
+     |                      |- error: 'stroke(_:lineWidth:antialiased:)' is only available in macOS 14.0 or newer
+     |                      `- note: add 'if #available' version check
+1010 |             )
+1011 |             
+[10/17] Compiling EtherSynth ModPage.swift
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ModPage.swift:645:18: error: 'fill(_:style:)' is only available in macOS 14.0 or newer
+ 541 | 
+ 542 | // MARK: - LFO Control View
+ 543 | struct LFOControlView: View {
+     |        `- note: add @available attribute to enclosing struct
+ 544 |     @Binding var lfo: LFO
+ 545 |     let onParameterChange: (String, Float) -> Void
+ 546 |     
+ 547 |     var body: some View {
+     |         `- note: add @available attribute to enclosing property
+ 548 |         VStack(spacing: 12) {
+ 549 |             // Header
+     :
+ 643 |         .background(
+ 644 |             RoundedRectangle(cornerRadius: 8)
+ 645 |                 .fill(Color.blue.opacity(0.05))
+     |                  |- error: 'fill(_:style:)' is only available in macOS 14.0 or newer
+     |                  `- note: add 'if #available' version check
+ 646 |                 .stroke(Color.blue.opacity(0.2), lineWidth: 1)
+ 647 |         )
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ModPage.swift:646:18: error: 'stroke(_:lineWidth:antialiased:)' is only available in macOS 14.0 or newer
+ 541 | 
+ 542 | // MARK: - LFO Control View
+ 543 | struct LFOControlView: View {
+     |        `- note: add @available attribute to enclosing struct
+ 544 |     @Binding var lfo: LFO
+ 545 |     let onParameterChange: (String, Float) -> Void
+ 546 |     
+ 547 |     var body: some View {
+     |         `- note: add @available attribute to enclosing property
+ 548 |         VStack(spacing: 12) {
+ 549 |             // Header
+     :
+ 644 |             RoundedRectangle(cornerRadius: 8)
+ 645 |                 .fill(Color.blue.opacity(0.05))
+ 646 |                 .stroke(Color.blue.opacity(0.2), lineWidth: 1)
+     |                  |- error: 'stroke(_:lineWidth:antialiased:)' is only available in macOS 14.0 or newer
+     |                  `- note: add 'if #available' version check
+ 647 |         )
+ 648 |     }
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ModPage.swift:791:18: error: 'fill(_:style:)' is only available in macOS 14.0 or newer
+ 680 | 
+ 681 | // MARK: - Envelope Control View
+ 682 | struct EnvelopeControlView: View {
+     |        `- note: add @available attribute to enclosing struct
+ 683 |     @Binding var envelope: Envelope
+ 684 |     let onParameterChange: (String, Float) -> Void
+ 685 |     
+ 686 |     var body: some View {
+     |         `- note: add @available attribute to enclosing property
+ 687 |         VStack(spacing: 12) {
+ 688 |             // Header
+     :
+ 789 |         .background(
+ 790 |             RoundedRectangle(cornerRadius: 8)
+ 791 |                 .fill(Color.green.opacity(0.05))
+     |                  |- error: 'fill(_:style:)' is only available in macOS 14.0 or newer
+     |                  `- note: add 'if #available' version check
+ 792 |                 .stroke(Color.green.opacity(0.2), lineWidth: 1)
+ 793 |         )
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ModPage.swift:792:18: error: 'stroke(_:lineWidth:antialiased:)' is only available in macOS 14.0 or newer
+ 680 | 
+ 681 | // MARK: - Envelope Control View
+ 682 | struct EnvelopeControlView: View {
+     |        `- note: add @available attribute to enclosing struct
+ 683 |     @Binding var envelope: Envelope
+ 684 |     let onParameterChange: (String, Float) -> Void
+ 685 |     
+ 686 |     var body: some View {
+     |         `- note: add @available attribute to enclosing property
+ 687 |         VStack(spacing: 12) {
+ 688 |             // Header
+     :
+ 790 |             RoundedRectangle(cornerRadius: 8)
+ 791 |                 .fill(Color.green.opacity(0.05))
+ 792 |                 .stroke(Color.green.opacity(0.2), lineWidth: 1)
+     |                  |- error: 'stroke(_:lineWidth:antialiased:)' is only available in macOS 14.0 or newer
+     |                  `- note: add 'if #available' version check
+ 793 |         )
+ 794 |     }
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ModPage.swift:839:26: error: 'fill(_:style:)' is only available in macOS 14.0 or newer
+ 796 | 
+ 797 | // MARK: - Modulation Matrix View
+ 798 | struct ModulationMatrixView: View {
+     |        `- note: add @available attribute to enclosing struct
+ 799 |     @Binding var connections: [ModulationConnection]
+ 800 |     let sources: [ModulationSource]
+     :
+ 813 |     }
+ 814 |     
+ 815 |     var body: some View {
+     |         `- note: add @available attribute to enclosing property
+ 816 |         VStack(spacing: 16) {
+ 817 |             // Header
+     :
+ 837 |                 .background(
+ 838 |                     RoundedRectangle(cornerRadius: 8)
+ 839 |                         .fill(Color.white)
+     |                          |- error: 'fill(_:style:)' is only available in macOS 14.0 or newer
+     |                          `- note: add 'if #available' version check
+ 840 |                         .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+ 841 |                 )
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ModPage.swift:840:26: error: 'stroke(_:lineWidth:antialiased:)' is only available in macOS 14.0 or newer
+ 796 | 
+ 797 | // MARK: - Modulation Matrix View
+ 798 | struct ModulationMatrixView: View {
+     |        `- note: add @available attribute to enclosing struct
+ 799 |     @Binding var connections: [ModulationConnection]
+ 800 |     let sources: [ModulationSource]
+     :
+ 813 |     }
+ 814 |     
+ 815 |     var body: some View {
+     |         `- note: add @available attribute to enclosing property
+ 816 |         VStack(spacing: 16) {
+ 817 |             // Header
+     :
+ 838 |                     RoundedRectangle(cornerRadius: 8)
+ 839 |                         .fill(Color.white)
+ 840 |                         .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+     |                          |- error: 'stroke(_:lineWidth:antialiased:)' is only available in macOS 14.0 or newer
+     |                          `- note: add 'if #available' version check
+ 841 |                 )
+ 842 |                 .frame(width: 200)
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ModPage.swift:887:13: error: generic struct 'Picker' requires that 'ModulationSource' conform to 'Hashable'
+ 885 |             
+ 886 |             // Source picker
+ 887 |             Picker("Source", selection: $selectedSource) {
+     |             `- error: generic struct 'Picker' requires that 'ModulationSource' conform to 'Hashable'
+ 888 |                 Text("None").tag(ModulationSource?.none)
+ 889 |                 ForEach(sources, id: \.id) { source in
+
+Swift.Optional:1:11: note: requirement from conditional conformance of 'ModulationSource?' to 'Hashable'
+1 | extension Optional : Hashable where Wrapped : Hashable {
+  |           `- note: requirement from conditional conformance of 'ModulationSource?' to 'Hashable'
+2 |     @inlinable public func hash(into hasher: inout Hasher)
+3 |     public var hashValue: Int { get }
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ModPage.swift:887:13: error: initializer 'init(_:selection:content:)' requires that 'ModulationSource' conform to 'Hashable'
+ 885 |             
+ 886 |             // Source picker
+ 887 |             Picker("Source", selection: $selectedSource) {
+     |             `- error: initializer 'init(_:selection:content:)' requires that 'ModulationSource' conform to 'Hashable'
+ 888 |                 Text("None").tag(ModulationSource?.none)
+ 889 |                 ForEach(sources, id: \.id) { source in
+
+Swift.Optional:1:11: note: requirement from conditional conformance of 'ModulationSource?' to 'Hashable'
+1 | extension Optional : Hashable where Wrapped : Hashable {
+  |           `- note: requirement from conditional conformance of 'ModulationSource?' to 'Hashable'
+2 |     @inlinable public func hash(into hasher: inout Hasher)
+3 |     public var hashValue: Int { get }
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ModPage.swift:888:30: error: referencing instance method 'tag(_:includeOptional:)' on 'Optional' requires that 'ModulationSource' conform to 'Hashable'
+ 886 |             // Source picker
+ 887 |             Picker("Source", selection: $selectedSource) {
+ 888 |                 Text("None").tag(ModulationSource?.none)
+     |                              `- error: referencing instance method 'tag(_:includeOptional:)' on 'Optional' requires that 'ModulationSource' conform to 'Hashable'
+ 889 |                 ForEach(sources, id: \.id) { source in
+ 890 |                     Text(source.name).tag(ModulationSource?.some(source))
+
+Swift.Optional:1:11: note: requirement from conditional conformance of 'Optional<ModulationSource>' to 'Hashable'
+1 | extension Optional : Hashable where Wrapped : Hashable {
+  |           `- note: requirement from conditional conformance of 'Optional<ModulationSource>' to 'Hashable'
+2 |     @inlinable public func hash(into hasher: inout Hasher)
+3 |     public var hashValue: Int { get }
+[11/17] Compiling EtherSynth LoopBrowser.swift
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/LoopBrowser.swift:501:8: error: invalid redeclaration of 'BreadcrumbNavigation'
+ 499 | 
+ 500 | // MARK: - Breadcrumb Navigation
+ 501 | struct BreadcrumbNavigation: View {
+     |        `- error: invalid redeclaration of 'BreadcrumbNavigation'
+ 502 |     let pathComponents: [String]
+ 503 |     let onNavigate: (String) -> Void
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/LoopBrowser.swift:154:41: error: argument passed to call that takes no arguments
+ 152 |                 VStack(spacing: 16) {
+ 153 |                     // Breadcrumb Navigation
+ 154 |                     BreadcrumbNavigation(
+     |                                         `- error: argument passed to call that takes no arguments
+ 155 |                         pathComponents: browserState.pathComponents,
+ 156 |                         onNavigate: { path in navigateToPath(path) }
+[12/17] Compiling EtherSynth ScatterBrowser.swift
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ScatterBrowser.swift:390:22: error: 'fill(_:style:)' is only available in macOS 14.0 or newer
+357 | 
+358 | // MARK: - Scatter Search Bar
+359 | struct ScatterSearchBar: View {
+    |        `- note: add @available attribute to enclosing struct
+360 |     @Binding var searchText: String
+361 |     
+362 |     var body: some View {
+    |         `- note: add @available attribute to enclosing property
+363 |         VStack(alignment: .leading, spacing: 8) {
+364 |             Text("Search Samples")
+    :
+388 |             .background(
+389 |                 RoundedRectangle(cornerRadius: 8)
+390 |                     .fill(Color.white)
+    |                      |- error: 'fill(_:style:)' is only available in macOS 14.0 or newer
+    |                      `- note: add 'if #available' version check
+391 |                     .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+392 |             )
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ScatterBrowser.swift:391:22: error: 'stroke(_:lineWidth:antialiased:)' is only available in macOS 14.0 or newer
+357 | 
+358 | // MARK: - Scatter Search Bar
+359 | struct ScatterSearchBar: View {
+    |        `- note: add @available attribute to enclosing struct
+360 |     @Binding var searchText: String
+361 |     
+362 |     var body: some View {
+    |         `- note: add @available attribute to enclosing property
+363 |         VStack(alignment: .leading, spacing: 8) {
+364 |             Text("Search Samples")
+    :
+389 |                 RoundedRectangle(cornerRadius: 8)
+390 |                     .fill(Color.white)
+391 |                     .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+    |                      |- error: 'stroke(_:lineWidth:antialiased:)' is only available in macOS 14.0 or newer
+    |                      `- note: add 'if #available' version check
+392 |             )
+393 |         }
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ScatterBrowser.swift:582:22: error: 'fill(_:style:)' is only available in macOS 14.0 or newer
+528 | 
+529 | // MARK: - Scatter Plot View
+530 | struct ScatterPlotView: View {
+    |        `- note: add @available attribute to enclosing struct
+531 |     let samplePoints: [SamplePoint]
+532 |     @Binding var selectedPoint: SamplePoint?
+    :
+541 |     @State private var isDragging: Bool = false
+542 |     
+543 |     var body: some View {
+    |         `- note: add @available attribute to enclosing property
+544 |         GeometryReader { geometry in
+545 |             ZStack {
+    :
+580 |             .background(
+581 |                 RoundedRectangle(cornerRadius: 8)
+582 |                     .fill(Color.white)
+    |                      |- error: 'fill(_:style:)' is only available in macOS 14.0 or newer
+    |                      `- note: add 'if #available' version check
+583 |                     .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+584 |             )
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ScatterBrowser.swift:583:22: error: 'stroke(_:lineWidth:antialiased:)' is only available in macOS 14.0 or newer
+528 | 
+529 | // MARK: - Scatter Plot View
+530 | struct ScatterPlotView: View {
+    |        `- note: add @available attribute to enclosing struct
+531 |     let samplePoints: [SamplePoint]
+532 |     @Binding var selectedPoint: SamplePoint?
+    :
+541 |     @State private var isDragging: Bool = false
+542 |     
+543 |     var body: some View {
+    |         `- note: add @available attribute to enclosing property
+544 |         GeometryReader { geometry in
+545 |             ZStack {
+    :
+581 |                 RoundedRectangle(cornerRadius: 8)
+582 |                     .fill(Color.white)
+583 |                     .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+    |                      |- error: 'stroke(_:lineWidth:antialiased:)' is only available in macOS 14.0 or newer
+    |                      `- note: add 'if #available' version check
+584 |             )
+585 |             .gesture(
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ScatterBrowser.swift:810:22: error: 'fill(_:style:)' is only available in macOS 14.0 or newer
+733 | 
+734 | // MARK: - Selected Sample Info
+735 | struct SelectedSampleInfo: View {
+    |        `- note: add @available attribute to enclosing struct
+736 |     let sample: SamplePoint
+737 |     let onPreview: () -> Void
+738 |     let onSelect: () -> Void
+739 |     
+740 |     var body: some View {
+    |         `- note: add @available attribute to enclosing property
+741 |         VStack(alignment: .leading, spacing: 12) {
+742 |             Text("Selected Sample")
+    :
+808 |             .background(
+809 |                 RoundedRectangle(cornerRadius: 8)
+810 |                     .fill(sample.category.color.opacity(0.05))
+    |                      |- error: 'fill(_:style:)' is only available in macOS 14.0 or newer
+    |                      `- note: add 'if #available' version check
+811 |                     .stroke(sample.category.color.opacity(0.2), lineWidth: 1)
+812 |             )
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ScatterBrowser.swift:811:22: error: 'stroke(_:lineWidth:antialiased:)' is only available in macOS 14.0 or newer
+733 | 
+734 | // MARK: - Selected Sample Info
+735 | struct SelectedSampleInfo: View {
+    |        `- note: add @available attribute to enclosing struct
+736 |     let sample: SamplePoint
+737 |     let onPreview: () -> Void
+738 |     let onSelect: () -> Void
+739 |     
+740 |     var body: some View {
+    |         `- note: add @available attribute to enclosing property
+741 |         VStack(alignment: .leading, spacing: 12) {
+742 |             Text("Selected Sample")
+    :
+809 |                 RoundedRectangle(cornerRadius: 8)
+810 |                     .fill(sample.category.color.opacity(0.05))
+811 |                     .stroke(sample.category.color.opacity(0.2), lineWidth: 1)
+    |                      |- error: 'stroke(_:lineWidth:antialiased:)' is only available in macOS 14.0 or newer
+    |                      `- note: add 'if #available' version check
+812 |             )
+813 |             
+[13/17] Compiling EtherSynth EngineAssignmentOverlay.swift
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/EngineAssignmentOverlay.swift:16:8: error: invalid redeclaration of 'EngineMetrics'
+ 14 | }
+ 15 | 
+ 16 | struct EngineMetrics {
+    |        `- error: invalid redeclaration of 'EngineMetrics'
+ 17 |     let cpuUsage: Float
+ 18 |     let memoryUsage: Float
+[14/17] Compiling EtherSynth PatternOverlay.swift
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/PatternOverlay.swift:70:31: error: expected ',' separator
+ 68 |             )
+ 69 |             .padding(.horizontal, 20)
+ 70 |             .padding(.vertical: 16)
+    |                               `- error: expected ',' separator
+ 71 |             .background(
+ 72 |                 RoundedRectangle(cornerRadius: 12)
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/PatternOverlay.swift:70:31: error: expected argument label before colon
+ 68 |             )
+ 69 |             .padding(.horizontal, 20)
+ 70 |             .padding(.vertical: 16)
+    |                               `- error: expected argument label before colon
+ 71 |             .background(
+ 72 |                 RoundedRectangle(cornerRadius: 12)
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/PatternOverlay.swift:284:87: error: cannot convert value of type 'Range<Int>' to expected argument type 'ClosedRange<Int>'
+282 |                             .foregroundColor(.secondary)
+283 |                         
+284 |                         Stepper("\(pattern.rotation)", value: $pattern.rotation, in: 0..<pattern.steps)
+    |                                                                                       `- error: cannot convert value of type 'Range<Int>' to expected argument type 'ClosedRange<Int>'
+285 |                             .labelsHidden()
+286 |                         
+
+/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/PatternOverlay.swift:665:9: warning: variable 'slope' was never mutated; consider changing to 'let' constant
+663 |     
+664 |     // Bresenham-like algorithm for Euclidean rhythms
+665 |     var slope = Double(hits) / Double(steps)
+    |         `- warning: variable 'slope' was never mutated; consider changing to 'let' constant
+666 |     var previous = -1.0
+667 |     

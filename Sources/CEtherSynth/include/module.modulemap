@@ -1,0 +1,5 @@
+module CEtherSynth {
+    header "EtherSynthBridge.h"
+    link "ethersynth"
+    export *
+}

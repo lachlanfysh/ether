@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Engine‑Centric Synth UI — Borderless Prototype (v2.2)</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --app-bg:#f2f4f8; --dev-bg:#f8fafd; --nav-bg:#eef2f7;
+  --panel:#ffffff; --panel-s:#f6f8fb;
+  --text:#0b1220; --text-d:#5b6a7e;
+  --play:#84cc16; --rec:#ef4444;
+  --shadow: 0 10px 24px rgba(16,24,40,0.08);
+  --soft: 0 1px 2px rgba(16,24,40,0.06), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--app-bg);color:var(--text);font-family:"Barlow Condensed",system-ui,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial}
+.app{width:960px;height:320px;margin:18px auto;background:var(--dev-bg);border-radius:24px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.top{height:36px;background:linear-gradient(#f8fafd,#f5f7fb);display:flex;align-items:center;gap:8px;padding:0 8px}
+.btn{border-radius:6px;height:24px;min-width:28px;padding:0 8px;display:flex;align-items:center;justify-content:center;background:#e0e6ef;cursor:pointer;user-select:none;box-shadow:var(--soft)}
+.btn.play{background:var(--play)} .btn.rec{background:var(--rec)}
+.sep{height:20px;width:1px;background:rgba(0,0,0,.06);margin:0 8px}
+.meta{font:12px/1 "Barlow Condensed";color:var(--text-d)} .meta.center{position:absolute;left:50%;transform:translateX(-50%);top:10px} .meta.right{margin-left:auto}
+.nav{height:36px;background:var(--nav-bg);display:flex;align-items:center;justify-content:center;gap:10px}
+.tab{width:48px;height:28px;border-radius:8px;background:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:inset 0 -1px 0 rgba(0,0,0,.05)}
+.tab.active{box-shadow:var(--soft)}
+.icon{width:24px;height:24px;color:var(--text)} .icon.dim{color:var(--text-d)}
+.view{position:absolute;left:0;right:0;top:72px;bottom:0;display:none} .view.active{display:block}
+.tl-header{height:24px;background:var(--panel-s);font:12px "Barlow Condensed";color:var(--text-d);display:flex;align-items:center;padding:0 10px}
+.tl{height:calc(100% - 24px);display:grid;grid-template-rows:repeat(8, 1fr)}
+.row{display:grid;grid-template-columns:180px 1fr}
+.row + .row .hdr::before{content:"";position:absolute;left:8px;right:8px;top:-1px;height:1px;background:rgba(0,0,0,.06)}
+.hdr{background:var(--panel-s);display:flex;flex-direction:column;gap:2px;padding:4px 8px;position:relative}
+.engine-chip{display:inline-flex;align-items:center;gap:6px}
+.color{width:14px;height:14px;border-radius:4px;background:#ccc;box-shadow:var(--soft)}
+.hdr .sub{font:10px "Barlow Condensed";color:var(--text-d)}
+.hdr .reassign{position:absolute;right:8px;top:6px;border-radius:10px;background:#fff;padding:2px 8px;font:11px "Barlow Condensed";cursor:pointer;box-shadow:var(--soft)}
+.unassigned{display:inline-flex;gap:6px;align-items:center;padding:2px 8px;background:#e2e8f0;border-radius:10px;color:var(--text-d);font:10px "Barlow Condensed";box-shadow:var(--soft)}
+.assign-btn{position:absolute;right:10px;top:5px;border-radius:10px;background:#fff;padding:2px 10px;font:11px "Barlow Condensed";cursor:pointer;box-shadow:var(--soft)}
+.grid{position:relative;background:#fff}
+.grid::before{content:"";position:absolute;inset:0;background:
+  repeating-linear-gradient(to right,#eef1f7 0,#eef1f7 calc(100%/128),
+  #f4f6fa calc(100%/128),#f4f6fa calc(100%/64),
+  #edf1f7 calc(100%/64),#edf1f7 calc(100%/16),
+  #e3e8f2 calc(100%/16),#e3e8f2 calc(100%/16 + 1px));opacity:.7}
+.block{position:absolute;height:22px;top:3px;border-radius:8px;display:flex;align-items:center;justify-content:center;font:11px "Barlow Condensed"}
+
+/* Overlays */
+.overlay{position:absolute;inset:72px 0 0 0;background:rgba(0,0,0,.24);display:none;align-items:center;justify-content:center}
+.modal{width:820px;max-height:208px;background:#fff;border-radius:14px;box-shadow:var(--shadow);display:flex;flex-direction:column;overflow:hidden}
+.modal .title{height:28px;background:var(--panel-s);display:flex;align-items:center;gap:10px;padding:0 8px;font:12px "Barlow Condensed"}
+.modal .body{padding:6px 8px;overflow:auto;max-height:172px}
+.btn2{border-radius:10px;background:var(--panel-s);padding:6px 10px;font:11px "Barlow Condensed";cursor:pointer;box-shadow:var(--soft)}
+
+/* Assign grid */
+.engines{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.engine-card{border-radius:12px;background:var(--panel-s);padding:8px;display:flex;flex-direction:column;gap:2px;box-shadow:var(--soft)}
+.engine-card .head{display:flex;align-items:center;gap:8px}
+.engine-card .chip{width:14px;height:14px;border-radius:4px}
+.engine-card .meta{font:10px "Barlow Condensed";color:var(--text-d)}
+
+/* Sound overlay */
+.hero{display:flex;gap:18px;align-items:flex-start;padding:2px 6px 4px}
+.knob{width:64px;height:64px;border-radius:50%;background:var(--panel-s);position:relative;box-shadow:var(--soft)}
+.knob .needle{position:absolute;width:3px;height:24px;background:#3b82f6;left:calc(50% - 1.5px);top:14px;transform-origin:50% 18px;transform:rotate(-30deg)}
+.knob .label{position:absolute;left:0;right:0;bottom:-14px;text-align:center;font:10px "Barlow Condensed";color:var(--text-d)}
+.extras{display:flex;gap:12px;align-items:center;padding:4px 6px}
+.mknob{width:44px;height:44px;border-radius:50%;background:var(--panel-s);position:relative;box-shadow:var(--soft)}
+.mknob .needle{position:absolute;width:3px;height:18px;background:#22c55e;left:calc(50% - 1.5px);top:10px;transform-origin:50% 10px;transform:rotate(-20deg)}
+.mknob .label{position:absolute;left:0;right:0;bottom:-12px;text-align:center;font:10px "Barlow Condensed";color:var(--text-d)}
+.strip{display:flex;gap:12px;align-items:center;padding:4px 6px}
+.sknob{width:36px;height:36px;border-radius:50%;background:var(--panel-s);position:relative;box-shadow:var(--soft)}
+.sknob .needle{position:absolute;width:3px;height:14px;background:#67e8f9;left:calc(50% - 1.5px);top:9px;transform-origin:50% 9px;transform:rotate(10deg)}
+.sknob .label{position:absolute;left:-6px;right:-6px;bottom:-12px;text-align:center;font:10px "Barlow Condensed";color:var(--text-d)}
+.inserts{margin-left:auto;display:flex;flex-direction:column;gap:6px;width:210px}
+.insert{border-radius:10px;background:var(--panel-s);padding:6px 8px;font:11px "Barlow Condensed";display:flex;justify-content:space-between;box-shadow:var(--soft)}
+.inspector{position:absolute;right:16px;top:54px;width:210px}
+.inspector .card{border-radius:10px;background:var(--panel-s);padding:6px;margin-bottom:6px;box-shadow:var(--soft)}
+
+/* Pattern overlays */
+.grid16{display:grid;grid-template-columns:repeat(16,1fr);gap:6px;margin-top:4px}
+.step{height:74px;border-radius:10px;background:var(--panel-s);position:relative;box-shadow:var(--soft)}
+.step .note{position:absolute;left:6px;right:6px;top:6px;height:18px;border-radius:8px;display:flex;align-items:center;justify-content:center;font:11px "Barlow Condensed";background:#22d3ee;color:#000;box-shadow:var(--soft)}
+.step .vel{position:absolute;left:6px;right:6px;bottom:6px;height:8px;border-radius:6px;background:var(--panel-s);box-shadow:inset 0 0 0 1px rgba(0,0,0,.04)}
+.step .vel .fill{height:100%;border-radius:6px;background:#34d399;width:60%}
+
+/* Drum overlay */
+.drum-wrap{max-height:156px;overflow:auto}
+.drum{display:grid;grid-template-columns:148px 1fr;gap:6px}
+.drum .lane{height:12px;margin-bottom:2px;display:flex;align-items:center;gap:6px}
+.lane .tag{width:10px;height:10px;border-radius:3px;background:#ffd92f;box-shadow:var(--soft)}
+.drum .steps{display:grid;grid-template-columns:repeat(16,1fr);gap:2px}
+.drum .steps .dstep{height:12px;border-radius:4px;background:var(--panel-s);box-shadow:var(--soft)}
+.drum .steps .dstep.on{background:#fb7185}
+
+/* Mod view */
+.mod-wrap{display:grid;grid-template-columns:repeat(3,1fr) 200px;gap:8px;padding:8px}
+.tile{border-radius:12px;background:#fff;padding:10px;box-shadow:var(--soft)}
+.tile h4{margin:0 0 6px 0;font:14px "Barlow Condensed"}
+.krow{display:flex;gap:12px;align-items:center}
+.kn{width:40px;height:40px;border-radius:50%;background:var(--panel-s);position:relative;box-shadow:var(--soft)}
+.kn .needle{position:absolute;width:3px;height:14px;background:#22c55e;left:calc(50% - 1.5px);top:9px;transform-origin:50% 9px;transform:rotate(-10deg)}
+.kn .lbl{text-align:center;font:11px "Barlow Condensed";color:var(--text-d)}
+.matrix .row{display:flex;justify-content:space-between;padding:3px 0;font:12px "Barlow Condensed"}
+
+/* Mix view */
+.mix{display:grid;grid-template-columns:repeat(8,1fr) 270px;gap:8px;padding:8px}
+.stripc{border-radius:12px;background:#fff;padding:10px;box-shadow:var(--soft)}
+.colorchip{width:12px;height:12px;border-radius:3px;margin-right:6px;display:inline-block;box-shadow:var(--soft)}
+.meter{width:6px;height:36px;border-radius:3px;background:var(--panel-s);margin-top:6px;position:relative;box-shadow:inset 0 0 0 1px rgba(0,0,0,.04)}
+.meter .lev{position:absolute;left:0;bottom:0;width:100%;background:#65a30d;border-radius:3px;height:24px}
+.fader{width:8px;height:92px;border-radius:4px;background:var(--panel-s);margin:8px auto;position:relative;box-shadow:inset 0 0 0 1px rgba(0,0,0,.04)}
+.fader .thumb{position:absolute;left:-6px;top:34px;width:20px;height:12px;border-radius:6px;background:#e5e7eb;box-shadow:var(--soft)}
+.snd{display:flex;gap:8px;justify-content:center}
+.snd .mini{width:18px;height:18px;border-radius:50%;background:var(--panel-s);position:relative;box-shadow:var(--soft)}
+.snd .mini::after{content:"";position:absolute;left:8px;top:4px;width:2px;height:8px;background:#67e8f9;transform:rotate(20deg);transform-origin:1px 8px}
+.right{border-radius:12px;background:var(--panel-s);padding:8px;box-shadow:var(--soft)}
+.bus{border-radius:10px;background:#fff;padding:8px;margin-bottom:8px;box-shadow:var(--soft)}
+.bus h5{margin:0 0 6px 0;font:13px "Barlow Condensed"}
+.tiny{display:flex;gap:12px;align-items:center}
+.tiny .mini{width:20px;height:20px;border-radius:50%;background:#fff;position:relative;box-shadow:var(--soft)}
+.tiny .mini::after{content:"";position:absolute;left:9px;top:5px;width:2px;height:8px;background:#22c55e;transform:rotate(18deg);transform-origin:1px 8px}
+
+/* Utils */
+.hide{display:none !important}
+.closeX{margin-left:auto;cursor:pointer}
+</style>
+</head>
+<body>
+<!-- Minimal inline icon: not strictly necessary for v2.2, keeping UI text-first -->
+<div class="app" id="app">
+  <div class="top">
+    <div class="btn play" title="Play">▶</div>
+    <div class="btn" title="Pause">⏸</div>
+    <div class="btn rec" title="Record">●</div>
+    <div class="sep"></div>
+    <div class="meta">BPM 120 • Swing 54%</div>
+    <div class="meta center">Bar 05:03 • CPU ▓▓▓░</div>
+    <div class="meta right">Project: Engine UI v2</div>
+  </div>
+  <div class="nav">
+    <div class="tab active" data-view="timeline" title="Timeline">▥</div>
+    <div class="tab" data-view="mod" title="Mod">∿</div>
+    <div class="tab" data-view="mix" title="Mix">▤</div>
+  </div>
+
+  <div class="view active" id="view-timeline">
+    <div class="tl-header">Tap a pattern to open Pattern • Tap engine chip to open Sound • Long-press header to Assign/Reassign</div>
+    <div class="tl" id="tl"></div>
+  </div>
+
+  <div class="view" id="view-mod">
+    <div class="mod-wrap">
+      <div class="tile"><h4>LFO1</h4><div class="krow">
+        <div><div class="kn"><div class="needle" style="transform:rotate(-30deg)"></div></div><div class="kn lbl">RATE</div></div>
+        <div><div class="kn"><div class="needle" style="transform:rotate(20deg)"></div></div><div class="kn lbl">DEPTH</div></div>
+        <div><div class="kn"><div class="needle" style="transform:rotate(0deg)"></div></div><div class="kn lbl">PHASE</div></div>
+      </div></div>
+      <div class="tile"><h4>LFO2</h4><div class="krow">
+        <div><div class="kn"><div class="needle" style="transform:rotate(-10deg)"></div></div><div class="kn lbl">RATE</div></div>
+        <div><div class="kn"><div class="needle" style="transform:rotate(30deg)"></div></div><div class="kn lbl">DEPTH</div></div>
+        <div><div class="kn"><div class="needle" style="transform:rotate(10deg)"></div></div><div class="kn lbl">PHASE</div></div>
+      </div></div>
+      <div class="tile"><h4>LFO3</h4><div class="krow">
+        <div><div class="kn"><div class="needle" style="transform:rotate(10deg)"></div></div><div class="kn lbl">RATE</div></div>
+        <div><div class="kn"><div class="needle" style="transform:rotate(-20deg)"></div></div><div class="kn lbl">DEPTH</div></div>
+        <div><div class="kn"><div class="needle" style="transform:rotate(0deg)"></div></div><div class="kn lbl">PHASE</div></div>
+      </div></div>
+      <div class="tile matrix"><h4>Mod Matrix</h4>
+        <div class="row"><div>LFO1 → MORPH</div><div>+0.30</div></div>
+        <div class="row"><div>Vel → FILTER</div><div>+0.62</div></div>
+        <div class="row"><div>AT → TIMBRE</div><div>-0.15</div></div>
+      </div>
+      <div class="tile" style="grid-column:1 / span 3"><h4>Random</h4>
+        <div class="krow">
+          <div><div class="kn"><div class="needle" style="transform:rotate(-8deg)"></div></div><div class="kn lbl">RATE</div></div>
+          <div><div class="kn"><div class="needle" style="transform:rotate(20deg)"></div></div><div class="kn lbl">DEPTH</div></div>
+          <div><div class="kn"><div class="needle" style="transform:rotate(12deg)"></div></div><div class="kn lbl">S&H</div></div>
+        </div>
+      </div>
+      <div class="tile right"><h4>Inspector</h4>
+        <div>Sources: LFO1–3, Random, AT, Vel</div>
+        <div>Dest: Pitch, H/T/M, Level, Strip, Extras…</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="view" id="view-mix">
+    <div class="mix">
+      <div class="stripc" id="mix-strips"></div>
+      <div class="stripc" id="mix-strips2"></div>
+      <div class="stripc" id="mix-strips3"></div>
+      <div class="stripc" id="mix-strips4"></div>
+      <div class="stripc" id="mix-strips5"></div>
+      <div class="stripc" id="mix-strips6"></div>
+      <div class="stripc" id="mix-strips7"></div>
+      <div class="stripc" id="mix-strips8"></div>
+      <div class="right">
+        <div class="bus"><h5>Reverb (Bus A)</h5><div class="tiny"><div class="mini"></div><div class="mini"></div><div class="mini"></div><div class="mini"></div><div class="mini"></div><div class="mini"></div></div></div>
+        <div class="bus"><h5>Texture (Bus B)</h5><div class="tiny"><div class="mini"></div><div class="mini"></div><div class="mini"></div><div class="mini"></div><div class="mini"></div><div class="mini"></div></div></div>
+        <div class="bus"><h5>Delay (Bus C)</h5><div class="tiny"><div class="mini"></div><div class="mini"></div><div class="mini"></div><div class="mini"></div><div class="mini"></div><div class="mini"></div></div></div>
+        <div class="bus"><h5>Master</h5><div class="tiny"><div class="mini"></div><div class="mini"></div><div class="mini"></div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="overlay"></div>
+</div>
+
+<script>
+const palette = {MacroWT:"#8da0cb", MacroFM:"#fc8d62", Additive:"#a6cee3", Waveshape:"#fb9a99", Vocal:"#e78ac3", Resonator:"#b2df8a", Modal:"#ffff99", Noise:"#b3b3b3", Tides:"#bebada", DrumKit:"#ffd92f"};
+const engines = [
+  {id:"MacroWT", cpu:"Medium", stereo:true, extras:["UNISON","SPREAD","SUB","NOISE","SYNC"]},
+  {id:"MacroFM", cpu:"Medium", stereo:true, extras:["ALGO","FEEDBACK","INDEX","RATIO","FOLD"]},
+  {id:"Additive", cpu:"Medium", stereo:true, extras:["PARTIALS","EVEN/ODD","SKEW","WARP"]},
+  {id:"Waveshape", cpu:"Light", stereo:true, extras:["SYMMETRY","DRIVE ALG","FOLD THR","BIAS"]},
+  {id:"Vocal", cpu:"Medium", stereo:true, extras:["VOWEL","FORMANT","BREATH","NOISE MIX"]},
+  {id:"Resonator", cpu:"Medium", stereo:true, extras:["EXCITER","DECAY","DAMP","BRIGHT"]},
+  {id:"Modal", cpu:"Heavy", stereo:true, extras:["EXCITER","MATERIAL","BRIGHT","SPACE"]},
+  {id:"Noise", cpu:"Light", stereo:true, extras:["COLOR","DENSITY","HP","LP"]},
+  {id:"Tides", cpu:"Medium", stereo:true, extras:["SLOPE","SMOOTH","SHAPE","RATE"]},
+  {id:"DrumKit", cpu:"Heavy", stereo:false, extras:["ACCENT","HUMANIZE","SEED"]}
+];
+const state = { tracks: Array.from({length:8}, (_,i)=>({engine:null, preset:"—", poly:6})), currentTrack: null };
+function $(q,root=document){return root.querySelector(q)} function $all(q,root=document){return Array.from(root.querySelectorAll(q))}
+$all(".tab").forEach(t=>t.addEventListener("click",()=>{ $all(".tab").forEach(x=>x.classList.toggle("active",x===t)); $all(".view").forEach(v=>v.classList.toggle("active", v.id==="view-"+t.dataset.view)); }));
+function renderTimeline(){
+  const tl=$("#tl"); tl.innerHTML="";
+  for(let i=0;i<8;i++){
+    const row=document.createElement("div"); row.className="row";
+    const hdr=document.createElement("div"); hdr.className="hdr"; hdr.dataset.index=i;
+    const grid=document.createElement("div"); grid.className="grid";
+    const tr=state.tracks[i];
+    if(tr.engine){
+      const chip=document.createElement("div"); chip.className="engine-chip"; chip.title="Open Sound";
+      const color=document.createElement("div"); color.className="color"; color.style.background=palette[tr.engine]||"#ccc";
+      const name=document.createElement("div"); name.textContent=tr.engine; chip.append(color,name); chip.onclick=()=>openSound(i); hdr.append(chip);
+      const sub=document.createElement("div"); sub.className="sub"; sub.textContent=`Preset • Poly ${tr.poly} • A/B/C`; hdr.append(sub);
+      const reas=document.createElement("div"); reas.className="reassign"; reas.textContent="Reassign"; reas.onclick=(e)=>{e.stopPropagation(); openAssign(i)}; hdr.append(reas);
+    } else {
+      const pill=document.createElement("div"); pill.className="unassigned"; pill.textContent="Unassigned"; hdr.append(pill);
+      const btn=document.createElement("div"); btn.className="assign-btn"; btn.textContent="Assign"; btn.onclick=(e)=>{e.stopPropagation(); openAssign(i)}; hdr.append(btn);
+    }
+    let tmr=null; hdr.onmousedown=()=>tmr=setTimeout(()=>openAssign(i),600); hdr.onmouseup=()=>clearTimeout(tmr); hdr.onmouseleave=()=>clearTimeout(tmr); hdr.oncontextmenu=(e)=>{e.preventDefault();openAssign(i)};
+    if(tr.engine){
+      const isDrums=tr.engine==="DrumKit"; const color=palette[tr.engine];
+      function addBlock(start,len,label){ const b=document.createElement("div"); b.className="block"; b.textContent=label; b.style.left=(start/128*100)+"%"; b.style.width=`calc(${(len/128*100)}% - 6px)`; b.style.background=color; b.onclick=()=>openPattern(i); grid.append(b); }
+      if(isDrums){ for(let s=0;s<128;s+=4) addBlock(s,4,"K"); } else { [0,8,32,56].forEach(s=>addBlock(s,8,"A")); }
+    }
+    row.append(hdr,grid); tl.append(row);
+  }
+}
+function overlay(html){ const ov=$("#overlay"); ov.innerHTML=`<div class='modal'>${html}</div>`; ov.style.display="flex"; ov.onclick=(e)=>{ if(e.target.id==="overlay") ov.style.display="none"; }; return ov; }
+function closeOverlay(){ $("#overlay").style.display="none"; }
+function openAssign(idx){
+  state.currentTrack=idx;
+  const cards=engines.map(e=>`<button class="engine-card" onclick="assignEngine('${e.id}')" title="Assign ${e.id}"><div class="head"><div class="chip" style="background:${palette[e.id]||"#ccc"}"></div><div style="font:13px 'Barlow Condensed'">${e.id}</div></div><div class="meta">CPU ${e.cpu} • ${e.stereo?"Stereo":"Mono"}</div></button>`).join("");
+  overlay(`<div class="title">Assign Engine — Track ${idx+1}<div class="closeX btn2" onclick="closeOverlay()">Close</div></div><div class="body"><div class="engines">${cards}</div></div>`);
+}
+function assignEngine(id){ const t=state.tracks[state.currentTrack]; t.engine=id; t.preset=id+" Default"; t.poly=id==="DrumKit"?1:6; closeOverlay(); renderTimeline(); openSound(state.currentTrack); }
+function openSound(idx){
+  state.currentTrack=idx; const t=state.tracks[idx]; if(!t.engine){ openAssign(idx); return; } const e=engines.find(x=>x.id===t.engine);
+  const extras=(e.extras||[]).slice(0,5).map((x,i)=>`<div class="mknob"><div class="needle" style="transform:rotate(${[-20,-10,10,20,-5][i]}deg)"></div><div class="label">${x}</div></div>`).join("");
+  overlay(`<div class="title">${t.engine} — Sound<div class="closeX btn2" onclick="closeOverlay()">Close</div></div>
+  <div class="body" style="position:relative">
+    <div class="hero">
+      <div class="knob"><div class="needle" style="transform:rotate(-30deg)"></div><div class="label">HARMONICS</div></div>
+      <div class="knob"><div class="needle" style="transform:rotate(-60deg)"></div><div class="label">TIMBRE</div></div>
+      <div class="knob"><div class="needle" style="transform:rotate(40deg)"></div><div class="label">MORPH</div></div>
+    </div>
+    <div class="extras">${extras}</div>
+    <div class="strip">
+      ${["HPF","LPF","RES","COMP","DRIVE","BODY","AIR","SEND A","SEND B","SEND C"].map((lab,i)=>`<div class="sknob"><div class="needle" style="transform:rotate(${[-80,70,-20,-10,-30,0,15,-40,-60,-80][i]}deg)"></div><div class="label">${lab}</div></div>`).join("")}
+      <div class="inserts"><div class="insert">Insert 1: Chorus <span>On</span></div><div class="insert">Insert 2: MicroDelay <span>On</span></div></div>
+    </div>
+    <div class="inspector">
+      <div class="card">Engine: ${t.engine} • ${e.stereo?"Stereo":"Mono"} • CPU ${e.cpu}<br>Voices: ${t.poly} • Quality: Normal</div>
+      <div class="card" style="display:flex;gap:6px;justify-content:flex-end"><button class="btn2" onclick="openAssign(${idx})">Reassign</button><button class="btn2">Preset…</button></div>
+    </div>
+  </div>`);
+}
+function openPattern(idx){
+  const t=state.tracks[idx]; if(!t.engine){ openAssign(idx); return; } const isDrum=t.engine==="DrumKit";
+  if(isDrum){
+    const lanes=["Kick1","Snare1","Clap","CHat","OHat","Tom1","Tom2","Ride","Crash","Perc1","Perc2","Shaker"];
+    const rows=lanes.map((name,ri)=>{ const steps=Array.from({length:16},(_,ci)=>{ const on=(ri===0&&[0,4,8,12].includes(ci))||(ri===1&&[4,12].includes(ci))||(ri===2&&[6,14].includes(ci))||(ri===3); return `<div class='dstep ${on?'on':''}'></div>`; }).join(""); return `<div class='lane'><div class='tag'></div><div style='width:132px'>${name}</div><div class='steps'>${steps}</div></div>`; }).join("");
+    overlay(`<div class="title">DrumKit — Pattern K<div class="closeX btn2" onclick="closeOverlay()">Close</div></div><div class="body"><div class="drum-wrap"><div class="drum">${rows}</div></div></div>`);
+  } else {
+    const notes={0:"C4",2:"E4",4:"G4",6:"C5"}; const steps=Array.from({length:16},(_,i)=>`<div class="step"><div class="note">${notes[i]||"—"}</div><div class="vel"><div class="fill" style="width:${(notes[i]? (i===6?90:(i===2?45:65)) : 0)}%"></div></div></div>`).join("");
+    overlay(`<div class="title">${t.engine} — Pattern A<div class="closeX btn2" onclick="closeOverlay()">Close</div></div><div class="body"><div class="grid16">${steps}</div></div>`);
+  }
+}
+function renderMix(){
+  function strip(el, name){ el.innerHTML=`<div><span class="colorchip" style="background:${palette[name]}"></span>${name}</div><div class="meter"><div class="lev" style="height:${22+Math.floor(Math.random()*14)}px"></div></div><div class="fader"><div class="thumb" style="top:${24+Math.floor(Math.random()*48)}px"></div></div><div class="snd"><div class="mini"></div><div class="mini"></div><div class="mini"></div></div><div style="text-align:center;margin-top:6px;font:11px 'Barlow Condensed'"><span class="btn2" style="padding:2px 6px">M</span> <span class="btn2" style="padding:2px 6px">S</span></div>`; }
+  const names=["MacroWT","MacroFM","Resonator","DrumKit","Additive","Vocal","Waveshape","Tides"];
+  ["mix-strips","mix-strips2","mix-strips3","mix-strips4","mix-strips5","mix-strips6","mix-strips7","mix-strips8"].forEach((id,idx)=>strip(document.getElementById(id), names[idx]));
+}
+renderTimeline(); renderMix();
+</script>
+</body>
+</html>

@@ -1,0 +1,38 @@
+# Naming Pattern Analysis
+
+## Current Issues:
+
+### Engine Naming Inconsistencies:
+- MacroVA vs MacroVAEngine
+- MacroFM vs MacroFMEngine  
+- Classic4OpFM (no Engine suffix)
+- Noise (no Engine suffix)
+- SerialHPLP (no Engine suffix)
+- SlideAccentBass (no Engine suffix)
+
+### Mixed Patterns:
+- Some have Engine suffix, others don't
+- Voice classes have inconsistent patterns
+- Utility classes mixed with engines
+
+## Standardization Plan:
+
+### Engines → *Engine suffix:
+- MacroVA → MacroVAEngine
+- MacroFM → MacroFMEngine
+- Classic4OpFM → Classic4OpFMEngine
+- Noise → NoiseEngine
+- SerialHPLP → SerialHPLPEngine
+- SlideAccentBass → SlideAccentBassEngine
+
+### Processors → *Processor suffix:
+- TapeEffectsProcessor ✓ (already correct)
+- Need to check other processing classes
+
+### Managers → *Manager suffix:
+- PresetManager ✓ (already correct)
+- VoiceManager ✓ (already correct)
+
+### Systems → *System suffix:
+- SmartKnobSystem ✓ (already correct)
+- VelocityLatchSystem ✓ (already correct)

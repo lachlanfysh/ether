@@ -1,0 +1,146 @@
+Product/UI Requirements — Engine-Centric Portable Synth (v2)
+0) Hardware & System Assumptions
+Display: 960×320 capacitive touchscreen (landscape).
+Controls:
+SmartKnob (primary parameter control, haptic torque/detents, step/soft modes).
+3 assignable encoders (per-screen/per-overlay remappable).
+Play & Record physical buttons.
+25-key keyboard (velocity; aftertouch if available).
+Core: STM32H7 @ ~600 MHz, 128 MB external RAM.
+Fonts: Titles/labels Barlow Condensed, values/numbers Roboto Mono (or system fallback on device).
+Icons: Minimal mono line icons (we exported 24/32/48), track color chips for identification.
+Palette: Color-blind friendly (ColorBrewer-style), soft light UI (Win95-ish minimal, modern spacing).
+
+1) IA & Navigation Model
+Top bar (always): Transport (Play/Pause/Rec), Tempo/Swing, Bar/Beat, CPU meter, Project name.
+Top-row nav (icons only, labeled in tooltip): Timeline • Mod • Mix.
+Everything else is context via overlays (Pattern, Sound, DrumKit, Assign/Reassign).
+Overlay invocation:
+Tap pattern block → Pattern overlay (pitched or drum, based on engine).
+Tap track header chip (engine name) → Sound overlay.
+Long-press track header → Assign/Reassign overlay.
+
+2) Tracks (8) — Engine-Agnostic & Assignable
+Initial state: All 8 tracks show Unassigned pill + “Assign Engine” button.
+Assign/Reassign overlay: Grid of all engines; each card shows:
+Icon + Name (e.g., MacroWT, MacroFM, Additive, Waveshape, Vocal, Resonator, Modal, Noise, Tides, DrumKit).
+CPUClass: Light / Medium / Heavy / VeryHeavy.
+Channel mode: Stereo/Mono (as declared by engine metadata).
+Short hint (“A/B/C macros, extras, strip, inserts”).
+Assign button confirms; track color stays with track (user-set), not engine.
+Track header (after assignment):
+Color chip, Engine Name, Preset name, Polyphony indicator, Mute/Solo, mini Send A/B/C meters.
+Context menu: Sound, Pattern, Mod (focus this track), Reassign Engine, Preset Save/Load, Rename, Track Color.
+Reassign behavior:
+Clips/patterns are preserved. Per-step automation rebinds by ParamID where available; otherwise reset to engine defaults (notify the user in a toast/log).
+If switching to/from DrumKit, clips remain; per-slot parameters are dropped (warn before apply).
+
+3) Timeline (Song View)
+8 rows visible at once (no vertical scroll).
+Resolution: fixed grid (e.g., 16 steps per bar); view shows long horizon (e.g., 128 steps) with subtle bar/beat grid.
+Blocks show Pattern letter (A/B/…) and Preset snapshot tag.
+Gestures: tap (open), drag to move/extend, clone (Alt-drag), context menu (rename, duplicate, color).
+No role labels like “Bass/Pad/Lead” — rows reflect engine assignment only.
+
+4) Pattern Overlays
+4.1 Pitched engines (MacroWT, MacroFM, Additive, Waveshape, Vocal, Resonator, Modal, Tides, Noise…)
+Single 16-step grid (configurable to ≤16); each step shows:
+Note lane chip (note name), velocity bar, quick menus for probability, ratchet, tie, slide, micro-tune per step.
+Header controls: Length, Quantize, Swing.
+Editing: tap to add/change, long-press for per-step menu, lasso select, copy/paste, nudge L/R, transpose ±, legato/tie, clear.
+4.2 DrumKit (12–16 lanes)
+Lanes: Kick, Snare, Clap, Hats, Toms, Cymbals, Perc, Shaker… (kit configurable).
+Steps show on/off; velocity shade; per-step probability & ratchet menu.
+Variations per lane (0–3) with simple selector; Choke groups are visualized.
+
+5) Sound Overlay — All Pitched Engines
+Layout (single pattern across engines):
+Hero Macros (large): HARMONICS • TIMBRE • MORPH (engine maps these to meaningful params/ranges).
+Engine Extras (medium): engine-specific controls (examples):
+MacroWT: UNISON, SPREAD, SUB, NOISE, SYNC, BANK, POSITION MODE…
+MacroFM: ALGO (stepped), FB, INDEX, RATIO/S, MOD FILTER/FOLD MODE…
+Additive/Harmonics: PARTIALS, EVEN/ODD, SKEW, WARP, DENOISE…
+Waveshape: SYMMETRY, DRIVE ALG, FOLD THRESH, BIAS…
+Vocal/Formant: VOWEL, FORMANT SHIFT, BREATH, NOISE MIX…
+Resonator/Modal/Tides/etc.: EXCITER, DECAY, DAMP, BRIGHTNESS, POSITION…
+Per-Voice Channel Strip (compact knobs): (fixed order)
+HPF_CUTOFF → LPF_CUTOFF (SVF) → LPF_RESO → FLT_KEYTRACK
+FLT_ENV amount + ADSR (or shared env)
+COMP_AMOUNT / PUNCH, DRIVE, DRIVE_TONE, BODY, AIR
+Send A/B/C mini knobs (always visible on right).
+Per-engine Inserts (2 slots): choose on each slot: Chorus / Flanger / Phaser / Trem / Bit-Crush / Mini Delay; on/off and swap order.
+Inspector (right rail): EngineID, Stereo/Mono, CPUClass, Voices, Quality (Eco/Normal/High), Reassign Engine button, Preset Save/Load.
+Rationale: Strip+Inserts are part of the engine’s voice tone design, not global FX—so they live here to keep sound-shaping local and recallable with the preset/clip.
+
+6) DrumKit Overlay — Slot Parity with Pitched
+Header (global): Kit Name, Accent, Humanize, Seed, Reassign (can move to any pitched engine; warn about slot params).
+Grid (12–16 slots): icon + name; per-slot LEVEL, PAN, Sends A/B/C, Insert (1).
+Slot Editor: model-specific params (KickAnalog/FM, SnareAnalog/Noise, Clap, Hats, Tom, Ride/Cymbal…), per-slot Channel Strip (same order as pitched), Choke Group, Variation (0–3), Note mapping, level/peak meters.
+Mapping panel: 25-key map presets (GM-ish, “Drum Wall”, “Split”), Learn, save with kit.
+
+7) Mod Page
+Sources: LFO1–3, Random, Aftertouch, Mod Wheel, Velocity, Env(s).
+Per-LFO tile: RATE, DEPTH, PHASE (+ waveform selector if supported by engine metadata).
+Matrix: rows appear dynamically from engine parameter IDs (always includes PITCH, HARMONICS, TIMBRE, MORPH, LEVEL + all exposed engine extras & strip params).
+Depth is bipolar; centered at 0 with a haptic notch.
+Inspector shows current modulation count per destination; conflict/clip indicator.
+
+8) Mix Page
+8 track strips: meter, fader, pan, Send A/B/C mini-knobs, Mute/Solo.
+Buses:
+Bus A – Reverb: RT60, Predelay, Damp, Size, Color, Mix.
+Bus B – Texture (granular/ensemble smear): Density, Size, Pitch shift, Spray, Jitter, Mix.
+Bus C – Delay: Time/Sync, Feedback, Tone, X-Feed, Mix.
+Master: Glue (comp amount), Width, Limiter (ceiling or mix), meter.
+Channel inserts on the Mix page are not duplicated (they belong to Sound overlay per engine/slot); Mix is for sends & balancing.
+
+9) SmartKnob & Haptics (per-parameter policy)
+Stepped parameters (ratios, banks, modes): hard detents at each step; medium torque; snap to step on release.
+Continuous linear (pan, level): light torque, soft ends; optional ±90° range guard for pan (center detent).
+Non-linear/“dangerous” (resonance, drive, comp amount): Curve-Expressive—torque increases as value rises; subtle soft-limit at top 5%; detent landmarks at 0 / 25 / 50 / 75 / 100.
+Bipolar (mod depths, filter keytrack): center detent (strong), lighter detents at ±25/50/75.
+Micro-tune: fine detents at cents/semitone boundaries.
+All three assignable encoders inherit each param’s detent/taper when mapped.
+
+10) Accessibility, Visuals & Input
+Palette: color-blind safe (pastel chips for tracks, monochrome icons elsewhere).
+Typography: Barlow Condensed (UI labels), Roboto Mono (values/numbers).
+Icons: our minimal set; always pair with labels in overlays; icons-only in top nav and common actions once learned.
+Touch targets: ≥ 36 px; overlay close in the top-right; scroll blocked while overlay is open.
+
+11) Engine/Parameter Metadata (drives UI)
+Engine manifest (per engine): { id, name, cpuClass, stereo, polyMax, qualityModes, macros:[H/T/M→targets], extras:[{id, label, range, taper, enum?}], channelStripEnabled:true, insertsAllowed:[…], defaultPreset }.
+Param: { id, label, unit, min, max, default, taper: linear | exp | log | bipolar, step? }.
+Haptics: { detents:[…], torqueProfile: flat | expressive | stepped }.
+UI renders from metadata; IDs are stable for reassign mapping & automation.
+
+12) Persistence & Presets
+Track presets include engine, extras, strip, inserts, macros; not timeline position.
+Pattern snapshots carry a link to the track preset & local overrides.
+Project includes tracks, patterns, mod matrix, buses, master.
+
+13) Performance Targets
+UI 60 FPS target; control-to-audio latency < 10 ms.
+Assign/Reassign is atomic; underruns must be avoided (pre-allocate voices, lazy-load heavy assets).
+
+14) Acceptance Criteria (UI)
+Startup shows 8× Unassigned rows.
+Assign overlay lists all engines with CPUClass & channel mode; Assign works and opens Sound.
+Sound overlay always shows Hero macros + Engine extras + Strip + two Inserts + Sends + Inspector.
+DrumKit overlay shows slots, per-slot strip/insert, choke/variations, and 25-key mapping tools.
+Pattern overlays match engine type (pitched vs drum).
+Mod page always exposes required destinations + engine extras via IDs.
+Reassign preserves clips, remaps params by ID, resets unmatched, and notifies the user.
+SmartKnob/encoders respect each parameter’s detents/torque/taper.
+
+PNG Mockups (v2)
+All images (zip): ui_v2_bundle.zip
+Or open individually:
+Timeline — Unassigned: timeline_unassigned.png
+Timeline — Assigned: timeline_assigned.png
+Assign Engine overlay: overlay_assign_engine.png
+Sound overlay (MacroWT): overlay_sound.png
+Pattern — Pitched: overlay_pattern_tone.png
+Pattern — DrumKit: overlay_pattern_drum.png
+Mod page: mod.png
+Mix page: mix.png

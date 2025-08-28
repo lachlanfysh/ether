@@ -1,0 +1,142 @@
+File Handling Architecture — Instant Sample Browsing & Slicing
+Delta/Top-Up v1.0
+A) Change map (what this updates)
+
+If there’s ever a conflict, this top-up wins for the topics above.
+
+1) Objectives & Non-Goals (New)
+Instant hover-audition in Scatter (≤10 ms median first sound) on any reasonable UHS-I card.
+Deterministic I/O: fat, aligned reads only; no tiny random SD reads during browsing.
+User-requested analysis/packing (no work on UI entry).
+Delta-aware rebuilds (stable layout).
+Non-goals: MP3/Opus in the preview path; background analysis when opening UI.
+
+2) Artifacts & Formats (per family) (Replace §2.6 browser details; Replace §4)
+Two companion files per family (e.g., Kicks, Snares), both versioned, little-endian:
+2.1 .bak — RAM pack (loaded when Scatter/Kit opens)
+Stubs: mono 22.05 kHz, PCM16 25–30 ms (≈1.1–1.3 KB each; IMA-ADPCM optional ≈0.6 KB).
+Index: { id, stub_ofs, stub_len_frames, gainQ15 }.
+2D coords: { int16 x, y } normalized to canvas.
+Spatial bins: uniform grid → idx[] lists for fast nearest queries.
+k-NN: top-16 neighbor indices per item (for suppression/prefetch).
+Optional features: Q15 MFCC/centroid vectors (for on-device “find similar”).
+Size @ 500 items: ~0.7–0.9 MB (PCM) or ~0.4–0.5 MB (ADPCM).
+2.2 .pak — SD pack (preview bodies; contiguous on disk)
+Bodies: mono 22.05 kHz PCM16, 200–400 ms each (≈8–18 KB).
+Index: { id, body_ofs (4 KB-aligned), body_len_ms, gainQ15 }.
+Size @ 500×250 ms: ~5–6 MB (SD only; never resident as a whole).
+2.3 Index DBs (Extend prior “offline tools”)
+sample_index.sqlite — manifest { path, size, mtime, hash, family } for delta tracking.
+loop_index.sqlite (optional, Slicer) — { path, bpm, key, bars, duration, preview_ofs }.
+
+3) Builders (desktop/headless, user-requested) (Replace §4)
+3.1 Scatter Analyzer + Pack Builder (per family)
+Pipeline (new/changed files only):
+Scan roots → diff vs DB.
+Decode → mono 22.05 kHz; trim silence (−60 dBFS).
+Onset detect (energy + spectral flux).
+Export stub → .bak; export body → .pak; write indices.
+Features (optional): MFCC(13), centroid/rolloff/flatness, ZCR, transient density → Q15.
+UMAP transform (pretrained) → 2D coords; k-NN(16).
+Spatial bins; write .bak & .pak contiguously; update DB.
+3.2 Loop Indexer (optional; Slicer)
+Fast BPM/Key/Bars; delta-aware; emits loop previews (1 bar) if desired.
+
+4) Runtime lifecycle (Scatter/Kit) (Replace §2.6 browser UX; Replace §4)
+4.1 Mode switch
+Edit mode (Scatter/Kit overlay): transport stopped; engines idle; SD worker priority ↑; may borrow RAM from page-cache.
+Play mode: normal budgets; .bak unloaded (or keep last family warm).
+4.2 Enter Scatter/Kit (async)
+Reserve ~1 MB transient RAM.
+Issue 1–3 aligned reads to load .bak.
+As soon as index+coords land → draw points (dim).
+As each stub block lands → enable hover for that block.
+On completion → undim; full Scatter active.
+Targets: points ≤250 ms; all stubs active ≤700 ms; UI never blocks.
+4.3 Hover audition (two-stage)
+Stage A (always): play stub from RAM instantly (1–2 ms attack).
+Stage B (conditional): if dwell ≥ 45–70 ms and I/O tokens free → single 128–256 KB aligned read from .pak; crossfade stub→body over 3–5 ms.
+4.4 Selection
+Keep preview playing; load full WAV (or RAM-stream) in background; crossfade to full-res.
+
+5) Preview arbiter (scribble-proof) (New; Extend §2.7 SmartKnob)
+Runs every ~8–10 ms; converts motion into bounded preview work.
+Gating
+Min time between triggers: 18–24 ms (global cap ≈ 60 stubs/s).
+Min distance: 20 px (fast) / 8 px (slow).
+Voronoi: only the closest point in a small radius can fire.
+Similarity suppression: if candidate ∈ k-NN(lastID) and motion is fast → skip (avoid near-duplicates back-to-back).
+Body eligibility
+Dwell ≥ 45–70 ms and I/O tokens available and SD queue not full.
+Concurrency & mixing
+Max preview voices: 16; body streams: 3 (grade-dependent).
+Soft limiter on Preview bus; −3 dB per extra overlap beyond 3; 5 ms fade on steal.
+Predictive prefetch
+When motion slows/aims: prefetch forward neighbors (4–6) into page-cache.
+Card grading → tokens
+Gold: bodies=3, prefetch=4, 256 KB reads.
+OK: bodies=2, prefetch=2, 128–192 KB reads.
+Slow: bodies=1, no prefetch, 128 KB reads, shorter 180–220 ms previews.
+
+6) SD / Filesystem & caching (Extend §1.2)
+SDMMC 4-bit + DMA, 48–50 MHz; correct cache maintenance around DMA buffers.
+exFAT, 64 KB clusters; factory packs placed contiguously.
+Reads only during browsing; logs to RAM, flush later.
+Page-cache (global): 16–32 MB (can loan +16 MB in Edit mode).
+Read sizes: ≥128 KB, 4 KB/cluster-aligned; per-stream read-ahead 200–500 ms.
+
+7) RAM budget (steady-state, 128 MB) (Extend §1.2; confirm sizing)
+Engines/FX delay lines: 10–16 MB
+UI buffers/assets: ~2 MB
+Active family .bak: ~1 MB (500 items; ADPCM halves)
+Kit one-shots preloaded (25 pads; RR optional): 1–5 MB
+Slicer loop buffer (if RAM-loaded <3 MB): ~3 MB
+Page-cache (streams & previews): 16–32 MB (+16 MB during Edit mode if desired)
+OS/scratch margin: 16–24 MB Total: ~49–83 MB → ample headroom in 128 MB.
+
+8) C++ interfaces (Extend §9)
+
+// RAM pack access (.bak)
+struct BakIndexRow { uint64_t id; uint32_t stubOfs; uint16_t stubLenFrames; uint16_t gainQ15; };
+
+class ScatterBak {
+public:
+  bool load(const char* path);              // map or read to RAM
+  const int16_t* stub(uint64_t id) const;   // PCM16 pointer
+  bool coords(uint64_t id, int16_t& x, int16_t& y) const;
+  uint8_t knn(uint64_t id, uint16_t outIdx[16]) const;
+};
+
+// SD preview cache (.pak)
+struct PreviewIdx { uint64_t id; uint32_t ofs; uint16_t lenMs; uint16_t gainQ15; };
+
+class PreviewCache {
+public:
+  void openPak(const char* path);
+  void prefetch(uint64_t id);                         // schedule aligned DMA
+  const int16_t* body(uint64_t id, size_t& nFrames);  // null if not resident
+};
+
+// Player & arbiter
+class PreviewPlayer {
+public:
+  void playStub(uint64_t id);             // Stage A (instant)
+  void bridgeWhenReady(uint64_t id);      // xfade stub→body (Stage B)
+  void stealOldestIfOverCap();
+};
+
+enum class CardGrade { Gold, Ok, Slow };
+
+class PreviewArbiter {
+public:
+  void setCardGrade(CardGrade g);
+  void tick(float x, float y, float t);   // 8–10 ms cadence
+};
+
+9) Acceptance tests (Extend §10)
+Scatter entry: UI visible ≤100 ms; points render ≤250 ms; all stubs active ≤700 ms.
+Scribble test: 30 s rapid drags over ≥1000 points → 0 glitches; first-sound median <10 ms, p99 <20 ms.
+Hover test: body stream begins within 60–90 ms; prefetch hit-rate ≥70%.
+Slow card: automatic downgrade (shorter previews, fewer bodies) but instant stubs preserved.
+Selection: preview→full WAV crossfade clean; no pops.
+Exit Scatter: memory returned; transport resumes without underrun.
