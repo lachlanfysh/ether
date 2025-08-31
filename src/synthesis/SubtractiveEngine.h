@@ -13,7 +13,7 @@ public:
     ~SubtractiveEngine() override;
     
     // SynthEngine interface
-    EngineType getType() const override { return EngineType::SUBTRACTIVE; }
+    EngineType getType() const override { return EngineType::MACRO_VA; }
     const char* getName() const override { return "Subtractive"; }
     const char* getDescription() const override { return "Classic analog-style synthesis"; }
     

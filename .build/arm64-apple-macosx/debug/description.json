@@ -24,47 +24,31 @@
       "inputs" : [
         {
           "kind" : "file",
-          "name" : "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/Design/IconLibrary.swift"
+          "name" : "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/AudioEngineConnector.swift"
         },
         {
           "kind" : "file",
-          "name" : "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/EngineAssignmentOverlay.swift"
+          "name" : "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/EtherSynthApp.swift"
         },
         {
           "kind" : "file",
-          "name" : "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/EtherSynth.swift"
+          "name" : "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/EtherSynthMainView.swift"
         },
         {
           "kind" : "file",
-          "name" : "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/LoopBrowser.swift"
+          "name" : "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/OverlayViews.swift"
         },
         {
           "kind" : "file",
-          "name" : "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/MixPage.swift"
+          "name" : "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/PatternScreenView.swift"
         },
         {
           "kind" : "file",
-          "name" : "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ModPage.swift"
+          "name" : "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/RealDataModels.swift"
         },
         {
           "kind" : "file",
-          "name" : "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/PatternOverlay.swift"
-        },
-        {
-          "kind" : "file",
-          "name" : "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/SamplerKitUI.swift"
-        },
-        {
-          "kind" : "file",
-          "name" : "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/SamplerSlicerUI.swift"
-        },
-        {
-          "kind" : "file",
-          "name" : "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ScatterBrowser.swift"
-        },
-        {
-          "kind" : "file",
-          "name" : "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/SoundOverlay.swift"
+          "name" : "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ScreenViews.swift"
         },
         {
           "kind" : "file",
@@ -72,27 +56,99 @@
         },
         {
           "kind" : "file",
-          "name" : "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/TimelineView.swift"
-        },
-        {
-          "kind" : "file",
-          "name" : "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/Utils/HapticFeedback.swift"
-        },
-        {
-          "kind" : "file",
-          "name" : "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/InstrumentBrowserViewModel.swift"
-        },
-        {
-          "kind" : "file",
-          "name" : "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/SynthControllerViewModel.swift"
-        },
-        {
-          "kind" : "file",
-          "name" : "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/TimelineViewModel.swift"
+          "name" : "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/SynthControllerExtensions.swift"
         },
         {
           "kind" : "file",
           "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/swift-version--58304C5D6DBC2206.txt"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherBridge.build/EtherSynthBridge.cpp.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherBridge.build/src/audio/AudioEngine.cpp.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherBridge.build/src/audio/DCBlocker.cpp.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherBridge.build/src/audio/LUFSNormalizer.cpp.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherBridge.build/src/audio/VoiceManager.cpp.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherBridge.build/src/control/modulation/ModulationMatrix.cpp.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherBridge.build/src/core/EtherSynth.cpp.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherBridge.build/src/engines/EngineParameterLayouts.cpp.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherBridge.build/src/instruments/InstrumentSlot.cpp.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherBridge.build/src/platform/hardware/HardwareInterface.cpp.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherBridge.build/src/platform/hardware/MacHardware.cpp.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherBridge.build/src/processing/effects/EffectsChain.cpp.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherBridge.build/src/sequencer/EuclideanRhythm.cpp.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherBridge.build/src/sequencer/Timeline.cpp.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherBridge.build/src/synthesis/BaseEngine.cpp.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherBridge.build/src/synthesis/DSPUtils.cpp.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherBridge.build/src/synthesis/EngineFactory.cpp.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherBridge.build/src/synthesis/FMEngine.cpp.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherBridge.build/src/synthesis/GranularEngine.cpp.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherBridge.build/src/synthesis/SubtractiveEngine.cpp.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherBridge.build/src/synthesis/SynthEngine.cpp.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherBridge.build/src/synthesis/WavetableEngine.cpp.o"
         },
         {
           "kind" : "file",
@@ -103,27 +159,19 @@
       "moduleName" : "EtherSynth",
       "moduleOutputPath" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/Modules/EtherSynth.swiftmodule",
       "objects" : [
-        "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/IconLibrary.swift.o",
-        "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/EngineAssignmentOverlay.swift.o",
-        "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/EtherSynth.swift.o",
-        "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/LoopBrowser.swift.o",
-        "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/MixPage.swift.o",
-        "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/ModPage.swift.o",
-        "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/PatternOverlay.swift.o",
-        "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/SamplerKitUI.swift.o",
-        "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/SamplerSlicerUI.swift.o",
-        "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/ScatterBrowser.swift.o",
-        "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/SoundOverlay.swift.o",
+        "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/AudioEngineConnector.swift.o",
+        "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/EtherSynthApp.swift.o",
+        "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/EtherSynthMainView.swift.o",
+        "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/OverlayViews.swift.o",
+        "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/PatternScreenView.swift.o",
+        "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/RealDataModels.swift.o",
+        "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/ScreenViews.swift.o",
         "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/SynthController.swift.o",
-        "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/TimelineView.swift.o",
-        "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/HapticFeedback.swift.o",
-        "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/InstrumentBrowserViewModel.swift.o",
-        "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/SynthControllerViewModel.swift.o",
-        "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/TimelineViewModel.swift.o"
+        "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/SynthControllerExtensions.swift.o"
       ],
       "otherArguments" : [
         "-target",
-        "arm64-apple-macosx13.0",
+        "arm64-apple-macosx14.0",
         "-enable-batch-mode",
         "-index-store-path",
         "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/index/store",
@@ -133,11 +181,11 @@
         "-DSWIFT_PACKAGE",
         "-DDEBUG",
         "-Xcc",
-        "-fmodule-map-file=/Users/lachlanfysh/Desktop/ether/Sources/CEtherSynth/include/module.modulemap",
+        "-fmodule-map-file=/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherBridge.build/module.modulemap",
         "-Xcc",
         "-I",
         "-Xcc",
-        "/Users/lachlanfysh/Desktop/ether/Sources/CEtherSynth/include",
+        "/Users/lachlanfysh/Desktop/ether",
         "-module-cache-path",
         "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/ModuleCache",
         "-parseable-output",
@@ -181,47 +229,31 @@
       "outputs" : [
         {
           "kind" : "file",
-          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/IconLibrary.swift.o"
+          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/AudioEngineConnector.swift.o"
         },
         {
           "kind" : "file",
-          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/EngineAssignmentOverlay.swift.o"
+          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/EtherSynthApp.swift.o"
         },
         {
           "kind" : "file",
-          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/EtherSynth.swift.o"
+          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/EtherSynthMainView.swift.o"
         },
         {
           "kind" : "file",
-          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/LoopBrowser.swift.o"
+          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/OverlayViews.swift.o"
         },
         {
           "kind" : "file",
-          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/MixPage.swift.o"
+          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/PatternScreenView.swift.o"
         },
         {
           "kind" : "file",
-          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/ModPage.swift.o"
+          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/RealDataModels.swift.o"
         },
         {
           "kind" : "file",
-          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/PatternOverlay.swift.o"
-        },
-        {
-          "kind" : "file",
-          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/SamplerKitUI.swift.o"
-        },
-        {
-          "kind" : "file",
-          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/SamplerSlicerUI.swift.o"
-        },
-        {
-          "kind" : "file",
-          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/ScatterBrowser.swift.o"
-        },
-        {
-          "kind" : "file",
-          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/SoundOverlay.swift.o"
+          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/ScreenViews.swift.o"
         },
         {
           "kind" : "file",
@@ -229,23 +261,7 @@
         },
         {
           "kind" : "file",
-          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/TimelineView.swift.o"
-        },
-        {
-          "kind" : "file",
-          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/HapticFeedback.swift.o"
-        },
-        {
-          "kind" : "file",
-          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/InstrumentBrowserViewModel.swift.o"
-        },
-        {
-          "kind" : "file",
-          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/SynthControllerViewModel.swift.o"
-        },
-        {
-          "kind" : "file",
-          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/TimelineViewModel.swift.o"
+          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/SynthControllerExtensions.swift.o"
         },
         {
           "kind" : "file",
@@ -254,23 +270,15 @@
       ],
       "prepareForIndexing" : false,
       "sources" : [
-        "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/Design/IconLibrary.swift",
-        "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/EngineAssignmentOverlay.swift",
-        "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/EtherSynth.swift",
-        "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/LoopBrowser.swift",
-        "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/MixPage.swift",
-        "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ModPage.swift",
-        "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/PatternOverlay.swift",
-        "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/SamplerKitUI.swift",
-        "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/SamplerSlicerUI.swift",
-        "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ScatterBrowser.swift",
-        "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/SoundOverlay.swift",
+        "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/AudioEngineConnector.swift",
+        "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/EtherSynthApp.swift",
+        "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/EtherSynthMainView.swift",
+        "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/OverlayViews.swift",
+        "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/PatternScreenView.swift",
+        "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/RealDataModels.swift",
+        "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ScreenViews.swift",
         "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/SynthController.swift",
-        "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/TimelineView.swift",
-        "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/Utils/HapticFeedback.swift",
-        "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/InstrumentBrowserViewModel.swift",
-        "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/SynthControllerViewModel.swift",
-        "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/TimelineViewModel.swift"
+        "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/SynthControllerExtensions.swift"
       ],
       "tempsPath" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build",
       "wholeModuleOptimization" : false
@@ -288,27 +296,19 @@
       "ether",
       "-incremental",
       "-c",
-      "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/Design/IconLibrary.swift",
-      "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/EngineAssignmentOverlay.swift",
-      "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/EtherSynth.swift",
-      "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/LoopBrowser.swift",
-      "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/MixPage.swift",
-      "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ModPage.swift",
-      "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/PatternOverlay.swift",
-      "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/SamplerKitUI.swift",
-      "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/SamplerSlicerUI.swift",
-      "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ScatterBrowser.swift",
-      "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/SoundOverlay.swift",
+      "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/AudioEngineConnector.swift",
+      "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/EtherSynthApp.swift",
+      "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/EtherSynthMainView.swift",
+      "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/OverlayViews.swift",
+      "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/PatternScreenView.swift",
+      "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/RealDataModels.swift",
+      "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ScreenViews.swift",
       "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/SynthController.swift",
-      "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/TimelineView.swift",
-      "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/Utils/HapticFeedback.swift",
-      "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/InstrumentBrowserViewModel.swift",
-      "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/SynthControllerViewModel.swift",
-      "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/TimelineViewModel.swift",
+      "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/SynthControllerExtensions.swift",
       "-I",
       "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/Modules",
       "-target",
-      "arm64-apple-macosx13.0",
+      "arm64-apple-macosx14.0",
       "-enable-batch-mode",
       "-index-store-path",
       "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/index/store",
@@ -318,11 +318,11 @@
       "-DSWIFT_PACKAGE",
       "-DDEBUG",
       "-Xcc",
-      "-fmodule-map-file=/Users/lachlanfysh/Desktop/ether/Sources/CEtherSynth/include/module.modulemap",
+      "-fmodule-map-file=/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherBridge.build/module.modulemap",
       "-Xcc",
       "-I",
       "-Xcc",
-      "/Users/lachlanfysh/Desktop/ether/Sources/CEtherSynth/include",
+      "/Users/lachlanfysh/Desktop/ether",
       "-module-cache-path",
       "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/ModuleCache",
       "-parseable-output",
@@ -366,11 +366,11 @@
     ]
   },
   "targetDependencyMap" : {
-    "CEtherSynth" : [
+    "EtherBridge" : [
 
     ],
     "EtherSynth" : [
-      "CEtherSynth"
+      "EtherBridge"
     ]
   },
   "testDiscoveryCommands" : {
@@ -406,47 +406,31 @@
         },
         {
           "kind" : "file",
-          "name" : "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/Design/IconLibrary.swift"
+          "name" : "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/AudioEngineConnector.swift"
         },
         {
           "kind" : "file",
-          "name" : "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/EngineAssignmentOverlay.swift"
+          "name" : "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/EtherSynthApp.swift"
         },
         {
           "kind" : "file",
-          "name" : "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/EtherSynth.swift"
+          "name" : "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/EtherSynthMainView.swift"
         },
         {
           "kind" : "file",
-          "name" : "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/LoopBrowser.swift"
+          "name" : "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/OverlayViews.swift"
         },
         {
           "kind" : "file",
-          "name" : "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/MixPage.swift"
+          "name" : "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/PatternScreenView.swift"
         },
         {
           "kind" : "file",
-          "name" : "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ModPage.swift"
+          "name" : "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/RealDataModels.swift"
         },
         {
           "kind" : "file",
-          "name" : "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/PatternOverlay.swift"
-        },
-        {
-          "kind" : "file",
-          "name" : "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/SamplerKitUI.swift"
-        },
-        {
-          "kind" : "file",
-          "name" : "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/SamplerSlicerUI.swift"
-        },
-        {
-          "kind" : "file",
-          "name" : "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ScatterBrowser.swift"
-        },
-        {
-          "kind" : "file",
-          "name" : "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/SoundOverlay.swift"
+          "name" : "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ScreenViews.swift"
         },
         {
           "kind" : "file",
@@ -454,23 +438,7 @@
         },
         {
           "kind" : "file",
-          "name" : "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/TimelineView.swift"
-        },
-        {
-          "kind" : "file",
-          "name" : "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/Utils/HapticFeedback.swift"
-        },
-        {
-          "kind" : "file",
-          "name" : "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/InstrumentBrowserViewModel.swift"
-        },
-        {
-          "kind" : "file",
-          "name" : "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/SynthControllerViewModel.swift"
-        },
-        {
-          "kind" : "file",
-          "name" : "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/TimelineViewModel.swift"
+          "name" : "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/SynthControllerExtensions.swift"
         }
       ],
       "outputFilePath" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/sources"
@@ -484,55 +452,119 @@
         },
         {
           "kind" : "file",
-          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/EngineAssignmentOverlay.swift.o"
+          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherBridge.build/EtherSynthBridge.cpp.o"
         },
         {
           "kind" : "file",
-          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/EtherSynth.swift.o"
+          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherBridge.build/src/audio/AudioEngine.cpp.o"
         },
         {
           "kind" : "file",
-          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/HapticFeedback.swift.o"
+          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherBridge.build/src/audio/DCBlocker.cpp.o"
         },
         {
           "kind" : "file",
-          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/IconLibrary.swift.o"
+          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherBridge.build/src/audio/LUFSNormalizer.cpp.o"
         },
         {
           "kind" : "file",
-          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/InstrumentBrowserViewModel.swift.o"
+          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherBridge.build/src/audio/VoiceManager.cpp.o"
         },
         {
           "kind" : "file",
-          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/LoopBrowser.swift.o"
+          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherBridge.build/src/control/modulation/ModulationMatrix.cpp.o"
         },
         {
           "kind" : "file",
-          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/MixPage.swift.o"
+          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherBridge.build/src/core/EtherSynth.cpp.o"
         },
         {
           "kind" : "file",
-          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/ModPage.swift.o"
+          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherBridge.build/src/engines/EngineParameterLayouts.cpp.o"
         },
         {
           "kind" : "file",
-          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/PatternOverlay.swift.o"
+          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherBridge.build/src/instruments/InstrumentSlot.cpp.o"
         },
         {
           "kind" : "file",
-          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/SamplerKitUI.swift.o"
+          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherBridge.build/src/platform/hardware/HardwareInterface.cpp.o"
         },
         {
           "kind" : "file",
-          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/SamplerSlicerUI.swift.o"
+          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherBridge.build/src/platform/hardware/MacHardware.cpp.o"
         },
         {
           "kind" : "file",
-          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/ScatterBrowser.swift.o"
+          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherBridge.build/src/processing/effects/EffectsChain.cpp.o"
         },
         {
           "kind" : "file",
-          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/SoundOverlay.swift.o"
+          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherBridge.build/src/sequencer/EuclideanRhythm.cpp.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherBridge.build/src/sequencer/Timeline.cpp.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherBridge.build/src/synthesis/BaseEngine.cpp.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherBridge.build/src/synthesis/DSPUtils.cpp.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherBridge.build/src/synthesis/EngineFactory.cpp.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherBridge.build/src/synthesis/FMEngine.cpp.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherBridge.build/src/synthesis/GranularEngine.cpp.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherBridge.build/src/synthesis/SubtractiveEngine.cpp.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherBridge.build/src/synthesis/SynthEngine.cpp.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherBridge.build/src/synthesis/WavetableEngine.cpp.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/AudioEngineConnector.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/EtherSynthApp.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/EtherSynthMainView.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/OverlayViews.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/PatternScreenView.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/RealDataModels.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/ScreenViews.swift.o"
         },
         {
           "kind" : "file",
@@ -540,15 +572,7 @@
         },
         {
           "kind" : "file",
-          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/SynthControllerViewModel.swift.o"
-        },
-        {
-          "kind" : "file",
-          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/TimelineView.swift.o"
-        },
-        {
-          "kind" : "file",
-          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/TimelineViewModel.swift.o"
+          "name" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/SynthControllerExtensions.swift.o"
         }
       ],
       "outputFilePath" : "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.product/Objects.LinkFileList"

@@ -87,21 +87,21 @@ constexpr float SynthEngine::getParameterDefault(ParameterID param) {
 
 std::unique_ptr<SynthEngine> createSynthEngine(EngineType type) {
     switch (type) {
-        case EngineType::SUBTRACTIVE:
+        case EngineType::MACRO_VA:
             return std::make_unique<SubtractiveEngine>();
-        case EngineType::WAVETABLE:
+        case EngineType::MACRO_WAVETABLE:
             return std::make_unique<WavetableEngine>();
-        case EngineType::FM:
+        case EngineType::MACRO_FM:
             return std::make_unique<FMEngine>();
-        case EngineType::PLAITS:
+        case EngineType::RINGS_VOICE:
             // return std::make_unique<PlaitsEngine>();
             return std::make_unique<SubtractiveEngine>(); // Fallback for now
-        case EngineType::GRANULAR:
+        case EngineType::ELEMENTS_VOICE:
             return std::make_unique<GranularEngine>();
-        case EngineType::SAMPLER:
+        case EngineType::SAMPLER_KIT:
             // return std::make_unique<SamplerEngine>();
             return std::make_unique<SubtractiveEngine>(); // Fallback for now
-        case EngineType::CHORD_GENERATOR:
+        case EngineType::MACRO_CHORD:
             // return std::make_unique<ChordGeneratorEngine>();
             return std::make_unique<SubtractiveEngine>(); // Fallback for now
         default:

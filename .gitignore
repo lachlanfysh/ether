@@ -1,1 +1,39 @@
-mutable_source/
+# Build artifacts
+.build/
+*.xcodeproj/
+*.dSYM/
+
+# IDE files
+.vscode/
+*.swp
+*.swo
+
+# macOS
+.DS_Store
+Icon?
+._*
+
+# Temporary files
+*.tmp
+*.log
+*~
+
+# C++ compiled objects
+*.o
+*.a
+*.so
+*.dylib
+
+# Test executables
+test_*
+enhanced_test
+bridge_test
+debug_*
+*.app
+
+# Audio samples (if large)
+# *.wav
+# *.aiff
+
+# Logs
+crash_logs/

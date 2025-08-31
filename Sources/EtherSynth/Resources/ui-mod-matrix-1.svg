@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <g fill="none" stroke="black" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round">
+    <ns0:circle xmlns:ns0="http://www.w3.org/2000/svg" cx="6" cy="7" r="1.2" /><ns0:circle xmlns:ns0="http://www.w3.org/2000/svg" cx="6" cy="12" r="1.2" /><ns0:circle xmlns:ns0="http://www.w3.org/2000/svg" cx="6" cy="17" r="1.2" /><ns0:rect xmlns:ns0="http://www.w3.org/2000/svg" x="10" y="5" width="11" height="14" rx="2" />
+  </g>
+</svg>

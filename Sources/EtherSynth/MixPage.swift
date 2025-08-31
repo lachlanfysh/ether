@@ -769,7 +769,7 @@ struct InsertSlotView: View {
                         .lineLimit(1)
                 }
                 .padding(.horizontal, 4)
-                .padding(.vertical: 2)
+                .padding(.vertical, 2)
                 .background(
                     RoundedRectangle(cornerRadius: 3)
                         .fill(effect.type.color.opacity(0.1))
@@ -1180,7 +1180,7 @@ struct MixTransportView: View {
                     Text("Reset Levels")
                         .font(.system(size: 10, weight: .medium))
                         .foregroundColor(.blue)
-                        .padding(.horizontal: 8)
+                        .padding(.horizontal, 8)
                         .padding(.vertical, 4)
                         .background(
                             RoundedRectangle(cornerRadius: 12)

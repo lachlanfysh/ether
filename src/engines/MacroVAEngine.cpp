@@ -425,7 +425,7 @@ AudioFrame MacroVAEngine::MacroVAVoice::processSample() {
         return AudioFrame(0.0f, 0.0f);
     }
     
-    age_++;
+    // Age is tracked by voiceState_ internally
     
     // Generate main oscillator output
     float oscOut;
@@ -455,15 +455,15 @@ AudioFrame MacroVAEngine::MacroVAVoice::processSample() {
     float tilted = tiltFilter_.process(filtered);
     
     // Apply envelope
-    float envLevel = envelope_.process();
+    float envLevel = envelope_->process();
     
     // Check if voice should be deactivated
-    if (!envelope_.isActive()) {
-        active_ = false;
+    if (!envelope_->isActive()) {
+        voiceState_.setInactive();
     }
     
     // Apply velocity and volume
-    float output = tilted * envLevel * velocity_ * volume_;
+    float output = tilted * envLevel * voiceState_.velocity_ * volume_;
     
     return AudioFrame(output, output);
 }
@@ -493,10 +493,10 @@ void MacroVAEngine::MacroVAVoice::setVolume(float volume) {
 }
 
 void MacroVAEngine::MacroVAVoice::setEnvelopeParams(float attack, float decay, float sustain, float release) {
-    envelope_.attack = attack;
-    envelope_.decay = decay;
-    envelope_.sustain = sustain;
-    envelope_.release = release;
+    envelope_->attack_ = attack;
+    envelope_->decay_ = decay;
+    envelope_->sustain_ = sustain;
+    envelope_->release_ = release;
 }
 
 // Filter implementations

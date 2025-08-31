@@ -34,7 +34,7 @@ public:
     // Engine info
     const char* getName() const override { return "Wavetable"; }
     const char* getDescription() const override { return "Morphing wavetable synthesizer"; }
-    EngineType getType() const override { return EngineType::WAVETABLE; }
+    EngineType getType() const override { return EngineType::MACRO_WAVETABLE; }
     
     // Voice management
     size_t getActiveVoiceCount() const override;

@@ -2,71 +2,47 @@
   "": {
     "swift-dependencies": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/master.swiftdeps"
   },
-  "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/Design/IconLibrary.swift": {
-    "dependencies": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/IconLibrary.d",
-    "object": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/IconLibrary.swift.o",
-    "swiftmodule": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/IconLibrary~partial.swiftmodule",
-    "swift-dependencies": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/IconLibrary.swiftdeps"
+  "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/AudioEngineConnector.swift": {
+    "dependencies": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/AudioEngineConnector.d",
+    "object": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/AudioEngineConnector.swift.o",
+    "swiftmodule": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/AudioEngineConnector~partial.swiftmodule",
+    "swift-dependencies": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/AudioEngineConnector.swiftdeps"
   },
-  "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/EngineAssignmentOverlay.swift": {
-    "dependencies": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/EngineAssignmentOverlay.d",
-    "object": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/EngineAssignmentOverlay.swift.o",
-    "swiftmodule": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/EngineAssignmentOverlay~partial.swiftmodule",
-    "swift-dependencies": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/EngineAssignmentOverlay.swiftdeps"
+  "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/EtherSynthApp.swift": {
+    "dependencies": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/EtherSynthApp.d",
+    "object": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/EtherSynthApp.swift.o",
+    "swiftmodule": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/EtherSynthApp~partial.swiftmodule",
+    "swift-dependencies": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/EtherSynthApp.swiftdeps"
   },
-  "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/EtherSynth.swift": {
-    "dependencies": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/EtherSynth.d",
-    "object": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/EtherSynth.swift.o",
-    "swiftmodule": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/EtherSynth~partial.swiftmodule",
-    "swift-dependencies": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/EtherSynth.swiftdeps"
+  "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/EtherSynthMainView.swift": {
+    "dependencies": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/EtherSynthMainView.d",
+    "object": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/EtherSynthMainView.swift.o",
+    "swiftmodule": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/EtherSynthMainView~partial.swiftmodule",
+    "swift-dependencies": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/EtherSynthMainView.swiftdeps"
   },
-  "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/LoopBrowser.swift": {
-    "dependencies": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/LoopBrowser.d",
-    "object": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/LoopBrowser.swift.o",
-    "swiftmodule": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/LoopBrowser~partial.swiftmodule",
-    "swift-dependencies": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/LoopBrowser.swiftdeps"
+  "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/OverlayViews.swift": {
+    "dependencies": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/OverlayViews.d",
+    "object": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/OverlayViews.swift.o",
+    "swiftmodule": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/OverlayViews~partial.swiftmodule",
+    "swift-dependencies": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/OverlayViews.swiftdeps"
   },
-  "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/MixPage.swift": {
-    "dependencies": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/MixPage.d",
-    "object": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/MixPage.swift.o",
-    "swiftmodule": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/MixPage~partial.swiftmodule",
-    "swift-dependencies": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/MixPage.swiftdeps"
+  "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/PatternScreenView.swift": {
+    "dependencies": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/PatternScreenView.d",
+    "object": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/PatternScreenView.swift.o",
+    "swiftmodule": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/PatternScreenView~partial.swiftmodule",
+    "swift-dependencies": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/PatternScreenView.swiftdeps"
   },
-  "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ModPage.swift": {
-    "dependencies": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/ModPage.d",
-    "object": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/ModPage.swift.o",
-    "swiftmodule": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/ModPage~partial.swiftmodule",
-    "swift-dependencies": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/ModPage.swiftdeps"
+  "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/RealDataModels.swift": {
+    "dependencies": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/RealDataModels.d",
+    "object": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/RealDataModels.swift.o",
+    "swiftmodule": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/RealDataModels~partial.swiftmodule",
+    "swift-dependencies": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/RealDataModels.swiftdeps"
   },
-  "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/PatternOverlay.swift": {
-    "dependencies": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/PatternOverlay.d",
-    "object": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/PatternOverlay.swift.o",
-    "swiftmodule": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/PatternOverlay~partial.swiftmodule",
-    "swift-dependencies": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/PatternOverlay.swiftdeps"
-  },
-  "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/SamplerKitUI.swift": {
-    "dependencies": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/SamplerKitUI.d",
-    "object": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/SamplerKitUI.swift.o",
-    "swiftmodule": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/SamplerKitUI~partial.swiftmodule",
-    "swift-dependencies": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/SamplerKitUI.swiftdeps"
-  },
-  "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/SamplerSlicerUI.swift": {
-    "dependencies": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/SamplerSlicerUI.d",
-    "object": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/SamplerSlicerUI.swift.o",
-    "swiftmodule": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/SamplerSlicerUI~partial.swiftmodule",
-    "swift-dependencies": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/SamplerSlicerUI.swiftdeps"
-  },
-  "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ScatterBrowser.swift": {
-    "dependencies": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/ScatterBrowser.d",
-    "object": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/ScatterBrowser.swift.o",
-    "swiftmodule": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/ScatterBrowser~partial.swiftmodule",
-    "swift-dependencies": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/ScatterBrowser.swiftdeps"
-  },
-  "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/SoundOverlay.swift": {
-    "dependencies": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/SoundOverlay.d",
-    "object": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/SoundOverlay.swift.o",
-    "swiftmodule": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/SoundOverlay~partial.swiftmodule",
-    "swift-dependencies": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/SoundOverlay.swiftdeps"
+  "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ScreenViews.swift": {
+    "dependencies": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/ScreenViews.d",
+    "object": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/ScreenViews.swift.o",
+    "swiftmodule": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/ScreenViews~partial.swiftmodule",
+    "swift-dependencies": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/ScreenViews.swiftdeps"
   },
   "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/SynthController.swift": {
     "dependencies": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/SynthController.d",
@@ -74,34 +50,10 @@
     "swiftmodule": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/SynthController~partial.swiftmodule",
     "swift-dependencies": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/SynthController.swiftdeps"
   },
-  "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/TimelineView.swift": {
-    "dependencies": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/TimelineView.d",
-    "object": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/TimelineView.swift.o",
-    "swiftmodule": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/TimelineView~partial.swiftmodule",
-    "swift-dependencies": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/TimelineView.swiftdeps"
-  },
-  "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/Utils/HapticFeedback.swift": {
-    "dependencies": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/HapticFeedback.d",
-    "object": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/HapticFeedback.swift.o",
-    "swiftmodule": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/HapticFeedback~partial.swiftmodule",
-    "swift-dependencies": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/HapticFeedback.swiftdeps"
-  },
-  "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/InstrumentBrowserViewModel.swift": {
-    "dependencies": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/InstrumentBrowserViewModel.d",
-    "object": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/InstrumentBrowserViewModel.swift.o",
-    "swiftmodule": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/InstrumentBrowserViewModel~partial.swiftmodule",
-    "swift-dependencies": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/InstrumentBrowserViewModel.swiftdeps"
-  },
-  "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/SynthControllerViewModel.swift": {
-    "dependencies": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/SynthControllerViewModel.d",
-    "object": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/SynthControllerViewModel.swift.o",
-    "swiftmodule": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/SynthControllerViewModel~partial.swiftmodule",
-    "swift-dependencies": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/SynthControllerViewModel.swiftdeps"
-  },
-  "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/ViewModels/TimelineViewModel.swift": {
-    "dependencies": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/TimelineViewModel.d",
-    "object": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/TimelineViewModel.swift.o",
-    "swiftmodule": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/TimelineViewModel~partial.swiftmodule",
-    "swift-dependencies": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/TimelineViewModel.swiftdeps"
+  "/Users/lachlanfysh/Desktop/ether/Sources/EtherSynth/SynthControllerExtensions.swift": {
+    "dependencies": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/SynthControllerExtensions.d",
+    "object": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/SynthControllerExtensions.swift.o",
+    "swiftmodule": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/SynthControllerExtensions~partial.swiftmodule",
+    "swift-dependencies": "/Users/lachlanfysh/Desktop/ether/.build/arm64-apple-macosx/debug/EtherSynth.build/SynthControllerExtensions.swiftdeps"
   }
 }

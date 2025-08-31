@@ -125,16 +125,16 @@ void AudioEngine::initializeInstruments() {
         instruments_[i] = std::make_unique<InstrumentSlot>(color);
         
         // Add a default engine to each instrument
-        instruments_[i]->addEngine(EngineType::SUBTRACTIVE);
+        instruments_[i]->addEngine(EngineType::MACRO_VA);
         
         std::cout << "Instrument " << i << " (" << 
-                     (color == InstrumentColor::RED ? "Red" :
-                      color == InstrumentColor::ORANGE ? "Orange" :
-                      color == InstrumentColor::YELLOW ? "Yellow" :
-                      color == InstrumentColor::GREEN ? "Green" :
-                      color == InstrumentColor::BLUE ? "Blue" :
-                      color == InstrumentColor::INDIGO ? "Indigo" :
-                      color == InstrumentColor::VIOLET ? "Violet" : "Grey")
+                     (color == InstrumentColor::CORAL ? "Coral" :
+                      color == InstrumentColor::PEACH ? "Peach" :
+                      color == InstrumentColor::CREAM ? "Cream" :
+                      color == InstrumentColor::SAGE ? "Sage" :
+                      color == InstrumentColor::TEAL ? "Teal" :
+                      color == InstrumentColor::SLATE ? "Slate" :
+                      color == InstrumentColor::PEARL ? "Pearl" : "Stone")
                      << ") initialized" << std::endl;
     }
 }

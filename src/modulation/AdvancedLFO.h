@@ -6,7 +6,7 @@
 #include <cstdint>
 #include <cmath>
 
-namespace EtherSynth {
+namespace EtherSynthModulation {
 
 /**
  * Advanced LFO System for EtherSynth V1.0
@@ -287,4 +287,4 @@ const char* getSyncModeName(AdvancedLFO::SyncMode mode);
 const char* getClockDivisionName(AdvancedLFO::ClockDivision division);
 float getClockDivisionValue(AdvancedLFO::ClockDivision division);
 
-} // namespace EtherSynth
+} // namespace EtherSynthModulation

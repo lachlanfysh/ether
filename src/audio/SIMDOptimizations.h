@@ -13,7 +13,7 @@
     #define SIMD_SSE2 1
 #endif
 
-namespace EtherSynth {
+namespace EtherSynthSIMD {
 namespace SIMD {
 
 /**
@@ -190,4 +190,4 @@ inline void processOscillatorBlock(float* output, float* phases,
 }
 
 } // namespace SIMD
-} // namespace EtherSynth
+} // namespace EtherSynthSIMD

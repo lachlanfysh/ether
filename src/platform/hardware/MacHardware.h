@@ -1,7 +1,7 @@
 #pragma once
 #include "HardwareInterface.h"
-#include <CoreAudio/CoreAudio.h>
-#include <AudioUnit/AudioUnit.h>
+#include <portaudio.h>
+#include <CoreMIDI/CoreMIDI.h>
 #include <array>
 #include <atomic>
 #include <map>
@@ -83,8 +83,8 @@ public:
     void handleMIDIInput(const uint8_t* data, size_t length);
     
 private:
-    // Core Audio components
-    AudioUnit audioUnit_;
+    // PortAudio components
+    PaStream* paStream_ = nullptr;
     bool audioInitialized_ = false;
     std::function<void(EtherAudioBuffer&)> audioCallback_;
     
@@ -113,14 +113,14 @@ private:
     // MIDI support
     std::function<void(const uint8_t*, size_t)> midiCallback_;
     
-    // Core Audio callback
-    static OSStatus audioRenderCallback(
-        void* inRefCon,
-        AudioUnitRenderActionFlags* ioActionFlags,
-        const AudioTimeStamp* inTimeStamp,
-        UInt32 inBusNumber,
-        UInt32 inNumberFrames,
-        AudioBufferList* ioData
+    // PortAudio callback
+    static int audioRenderCallback(
+        const void* inputBuffer,
+        void* outputBuffer,
+        unsigned long framesPerBuffer,
+        const PaStreamCallbackTimeInfo* timeInfo,
+        PaStreamCallbackFlags statusFlags,
+        void* userData
     );
     
     // MIDI callback

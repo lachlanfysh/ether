@@ -120,7 +120,10 @@ struct SoundOverlay: View {
     
     private func updateParameter(paramId: String, value: Float) {
         // Update synth controller with new parameter value
-        synthController.setParameter(paramId: paramId, value: value)
+        // Convert string paramId to Int if needed
+        if let paramIndex = Int(paramId) {
+            synthController.setInstrumentParameterEnhanced(synthController.uiArmedInstrumentIndex, paramIndex, value: value)
+        }
     }
     
     private func loadPreset(_ preset: EnginePreset) {
@@ -446,10 +449,10 @@ struct HeroMacroKnob: View {
                             dragOffset = 0
                         }
                         
-                        let delta = Float(value.translation.y - dragOffset) * -sensitivity
+                        let delta = Float(value.translation.height - dragOffset) * -sensitivity
                         let newValue = clamp(parameter.value + delta, to: parameter.range)
                         onValueChange(newValue)
-                        dragOffset = value.translation.y
+                        dragOffset = value.translation.height
                     }
                     .onEnded { _ in
                         isDragging = false

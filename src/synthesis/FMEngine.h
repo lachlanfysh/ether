@@ -36,7 +36,7 @@ public:
     // Engine info
     const char* getName() const override { return "FM Synth"; }
     const char* getDescription() const override { return "4-operator FM synthesis"; }
-    EngineType getType() const override { return EngineType::FM; }
+    EngineType getType() const override { return EngineType::MACRO_FM; }
     
     // Voice management
     size_t getActiveVoiceCount() const override;

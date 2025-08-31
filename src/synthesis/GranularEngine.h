@@ -38,7 +38,7 @@ public:
     // Engine info
     const char* getName() const override { return "Granular"; }
     const char* getDescription() const override { return "Real-time granular synthesis"; }
-    EngineType getType() const override { return EngineType::GRANULAR; }
+    EngineType getType() const override { return EngineType::ELEMENTS_VOICE; }
     
     // Voice management
     size_t getActiveVoiceCount() const override;

@@ -31,86 +31,70 @@ MacHardware::MacHardware() {
 
 MacHardware::~MacHardware() {
     if (audioInitialized_) {
-        AudioUnitUninitialize(audioUnit_);
-        AudioComponentInstanceDispose(audioUnit_);
+        Pa_StopStream(paStream_);
+        Pa_CloseStream(paStream_);
+        Pa_Terminate();
     }
 }
 
 bool MacHardware::initializeAudio() {
-    std::cout << "Initializing Core Audio..." << std::endl;
+    std::cout << "Initializing PortAudio..." << std::endl;
     
-    // Find default output unit
-    AudioComponentDescription desc = {};
-    desc.componentType = kAudioUnitType_Output;
-    desc.componentSubType = kAudioUnitSubType_DefaultOutput;
-    desc.componentManufacturer = kAudioUnitManufacturer_Apple;
-    
-    AudioComponent component = AudioComponentFindNext(nullptr, &desc);
-    if (!component) {
-        std::cerr << "Failed to find default output audio unit" << std::endl;
+    // Initialize PortAudio
+    PaError err = Pa_Initialize();
+    if (err != paNoError) {
+        std::cerr << "Failed to initialize PortAudio: " << Pa_GetErrorText(err) << std::endl;
         return false;
     }
     
-    // Create audio unit instance
-    OSStatus result = AudioComponentInstanceNew(component, &audioUnit_);
-    if (result != noErr) {
-        std::cerr << "Failed to create audio unit instance: " << result << std::endl;
+    // Use device 1 (Mac speakers) as requested
+    int deviceId = 1;
+    
+    // Get device info
+    const PaDeviceInfo* deviceInfo = Pa_GetDeviceInfo(deviceId);
+    if (!deviceInfo) {
+        std::cerr << "Failed to get device info for device " << deviceId << std::endl;
+        Pa_Terminate();
         return false;
     }
     
-    // Configure audio format
-    AudioStreamBasicDescription format = {};
-    format.mSampleRate = SAMPLE_RATE;
-    format.mFormatID = kAudioFormatLinearPCM;
-    format.mFormatFlags = kAudioFormatFlagIsFloat | kAudioFormatFlagIsPacked;
-    format.mChannelsPerFrame = 2;  // Stereo
-    format.mBitsPerChannel = 32;
-    format.mBytesPerFrame = sizeof(float) * 2;
-    format.mBytesPerPacket = sizeof(float) * 2;
-    format.mFramesPerPacket = 1;
+    std::cout << "Using audio device: " << deviceInfo->name << std::endl;
     
-    result = AudioUnitSetProperty(audioUnit_, 
-                                  kAudioUnitProperty_StreamFormat,
-                                  kAudioUnitScope_Input, 
-                                  0, 
-                                  &format, 
-                                  sizeof(format));
-    if (result != noErr) {
-        std::cerr << "Failed to set audio format: " << result << std::endl;
+    // Setup output parameters
+    PaStreamParameters outputParameters;
+    outputParameters.device = deviceId;
+    outputParameters.channelCount = 2; // Stereo
+    outputParameters.sampleFormat = paFloat32;
+    outputParameters.suggestedLatency = deviceInfo->defaultLowOutputLatency;
+    outputParameters.hostApiSpecificStreamInfo = nullptr;
+    
+    // Open stream
+    err = Pa_OpenStream(&paStream_,
+                        nullptr, // No input
+                        &outputParameters,
+                        SAMPLE_RATE,
+                        BUFFER_SIZE,
+                        paClipOff,
+                        audioRenderCallback,
+                        this);
+    
+    if (err != paNoError) {
+        std::cerr << "Failed to open PortAudio stream: " << Pa_GetErrorText(err) << std::endl;
+        Pa_Terminate();
         return false;
     }
     
-    // Set render callback
-    AURenderCallbackStruct callback = {};
-    callback.inputProc = audioRenderCallback;
-    callback.inputProcRefCon = this;
-    
-    result = AudioUnitSetProperty(audioUnit_,
-                                  kAudioUnitProperty_SetRenderCallback,
-                                  kAudioUnitScope_Input,
-                                  0,
-                                  &callback,
-                                  sizeof(callback));
-    if (result != noErr) {
-        std::cerr << "Failed to set render callback: " << result << std::endl;
-        return false;
-    }
-    
-    // Initialize and start audio unit
-    result = AudioUnitInitialize(audioUnit_);
-    if (result != noErr) {
-        std::cerr << "Failed to initialize audio unit: " << result << std::endl;
-        return false;
-    }
-    
-    result = AudioOutputUnitStart(audioUnit_);
-    if (result != noErr) {
-        std::cerr << "Failed to start audio unit: " << result << std::endl;
+    // Start the stream
+    err = Pa_StartStream(paStream_);
+    if (err != paNoError) {
+        std::cerr << "Failed to start PortAudio stream: " << Pa_GetErrorText(err) << std::endl;
+        Pa_CloseStream(paStream_);
+        Pa_Terminate();
         return false;
     }
     
     audioInitialized_ = true;
-    std::cout << "Core Audio initialized successfully" << std::endl;
+    std::cout << "PortAudio initialized successfully" << std::endl;
     std::cout << "Sample Rate: " << SAMPLE_RATE << " Hz" << std::endl;
     std::cout << "Buffer Size: " << BUFFER_SIZE << " samples" << std::endl;
     std::cout << "Latency: " << (BUFFER_SIZE / SAMPLE_RATE * 1000.0f) << " ms" << std::endl;
@@ -122,48 +106,44 @@ void MacHardware::setAudioCallback(std::function<void(EtherAudioBuffer&)> callba
     audioCallback_ = callback;
 }
 
-OSStatus MacHardware::audioRenderCallback(
-    void* inRefCon,
-    AudioUnitRenderActionFlags* ioActionFlags,
-    const AudioTimeStamp* inTimeStamp,
-    UInt32 inBusNumber,
-    UInt32 inNumberFrames,
-    AudioBufferList* ioData) {
+int MacHardware::audioRenderCallback(
+    const void* inputBuffer,
+    void* outputBuffer,
+    unsigned long framesPerBuffer,
+    const PaStreamCallbackTimeInfo* timeInfo,
+    PaStreamCallbackFlags statusFlags,
+    void* userData) {
     
-    MacHardware* hardware = static_cast<MacHardware*>(inRefCon);
+    MacHardware* hardware = static_cast<MacHardware*>(userData);
+    float* output = static_cast<float*>(outputBuffer);
     
-    // Clear output buffers
-    for (UInt32 i = 0; i < ioData->mNumberBuffers; i++) {
-        memset(ioData->mBuffers[i].mData, 0, ioData->mBuffers[i].mDataByteSize);
-    }
+    // Clear output buffer
+    memset(output, 0, framesPerBuffer * 2 * sizeof(float));
     
-    if (hardware->audioCallback_ && inNumberFrames <= BUFFER_SIZE) {
+    if (hardware->audioCallback_ && framesPerBuffer <= BUFFER_SIZE) {
         auto start = std::chrono::high_resolution_clock::now();
         
-        // Create audio buffer from Core Audio format
+        // Create audio buffer from PortAudio format
         EtherAudioBuffer buffer;
         
         // Call the ether audio engine
         hardware->audioCallback_(buffer);
         
-        // Convert from ether AudioFrame format to Core Audio format
-        float* leftChannel = static_cast<float*>(ioData->mBuffers[0].mData);
-        float* rightChannel = static_cast<float*>(ioData->mBuffers[1].mData);
-        
-        for (UInt32 i = 0; i < inNumberFrames && i < BUFFER_SIZE; i++) {
-            leftChannel[i] = buffer[i].left;
-            rightChannel[i] = buffer[i].right;
+        // Convert from ether AudioFrame format to interleaved PortAudio format
+        for (unsigned long i = 0; i < framesPerBuffer && i < BUFFER_SIZE; i++) {
+            output[i * 2 + 0] = buffer[i].left;   // Left channel
+            output[i * 2 + 1] = buffer[i].right;  // Right channel
         }
         
         // Calculate CPU usage
         auto end = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
         float processingTime = duration.count() / 1000.0f; // Convert to milliseconds
-        float maxTime = (inNumberFrames / SAMPLE_RATE) * 1000.0f; // Available time in ms
+        float maxTime = (framesPerBuffer / SAMPLE_RATE) * 1000.0f; // Available time in ms
         hardware->cpuUsage_.store(std::min(100.0f, (processingTime / maxTime) * 100.0f));
     }
     
-    return noErr;
+    return paContinue;
 }
 
 KeyState MacHardware::getKeyState(uint8_t keyIndex) const {

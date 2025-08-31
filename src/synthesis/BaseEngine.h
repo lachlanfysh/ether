@@ -111,6 +111,11 @@ public:
     uint32_t getModDestinations() const override;
     const HapticInfo* getHapticInfo(int paramID) const override;
     
+    // Common parameter ranges and conversions (public utilities)
+    static float logScale(float value01, float min, float max);
+    static float expScale(float value01, float min, float max);
+    static float linearScale(float value01, float min, float max);
+    
 protected:
     const char* name_;
     const char* shortName_;
@@ -159,10 +164,6 @@ protected:
     float getParam(int paramID, float defaultValue = 0.0f) const;
     float getModulatedParam(int paramID, float baseValue) const;
     
-    // Common parameter ranges and conversions
-    static float logScale(float value01, float min, float max);
-    static float expScale(float value01, float min, float max);
-    static float linearScale(float value01, float min, float max);
     
     // Update smoothed parameters
     void updateSmoothParams();
@@ -251,7 +252,7 @@ public:
     
     void render(const RenderContext& ctx, float* out, int n) override {
         // SIMD-optimized buffer clearing
-        EtherSynth::SIMD::clearBuffer(out, n);
+        EtherSynthSIMD::SIMD::clearBuffer(out, n);
         
         // Collect active voices and their buffers for cache-friendly processing
         int activeCount = 0;
@@ -273,7 +274,7 @@ public:
         
         // SIMD-optimized voice accumulation
         if (activeCount > 0) {
-            EtherSynth::SIMD::accumulateVoices(out, voiceBuffers, activeCount, n);
+            EtherSynthSIMD::SIMD::accumulateVoices(out, voiceBuffers, activeCount, n);
         }
     }
     
