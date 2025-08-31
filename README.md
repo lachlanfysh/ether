@@ -75,10 +75,20 @@ swift build
 .build/debug/EtherSynth
 ```
 
-### C++ Only Build
+### Terminal Interface (Crash-Free!)
 ```bash
-g++ -std=c++17 -I/opt/homebrew/include -L/opt/homebrew/lib -lportaudio src/main.cpp src/**/*.cpp -o ethersynth
-./ethersynth
+make -f Makefile.simple
+./simple_terminal
+```
+
+### Commands
+```
+engines          # List all synthesis engines
+engine 1         # Switch to MacroFM
+step 1           # Toggle step 1
+step 5           # Toggle step 5  
+play             # Start sequencer
+status           # Show current state
 ```
 
 ## Usage
@@ -104,7 +114,7 @@ The C++ audio engines represent significant work in digital signal processing, i
 
 ## License
 
-[Your License Here]
+MIT License
 
 ## Contributing
 
