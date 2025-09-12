@@ -78,6 +78,9 @@ int ether_get_smart_knob_parameter(EtherSynthCpp* synth);
 // LFO Control Functions (for advanced modulation)
 void ether_assign_lfo_to_parameter(EtherSynthCpp* synth, int instrument, int lfoIndex, int keyIndex, float depth);
 void ether_remove_lfo_assignment(EtherSynthCpp* synth, int instrument, int lfoIndex, int keyIndex);
+// Convenience: assign by ParameterID instead of key index (grid UI)
+void ether_assign_lfo_to_param_id(EtherSynthCpp* synth, int instrument, int lfoIndex, int paramId, float depth);
+void ether_remove_lfo_assignment_by_param(EtherSynthCpp* synth, int instrument, int lfoIndex, int paramId);
 void ether_set_lfo_waveform(EtherSynthCpp* synth, int instrument, int lfoIndex, int waveform);
 void ether_set_lfo_rate(EtherSynthCpp* synth, int instrument, int lfoIndex, float rate);
 void ether_set_lfo_depth(EtherSynthCpp* synth, int instrument, int lfoIndex, float depth);

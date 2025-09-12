@@ -607,9 +607,35 @@ void ether_remove_lfo_assignment(EtherSynthCpp* synth, int instrument, int lfoIn
     }
 }
 
+void ether_assign_lfo_to_param_id(EtherSynthCpp* synth, int instrument, int lfoIndex, int paramId, float depth) {
+    if (!synth || instrument < 0 || instrument >= 8) return;
+    if (lfoIndex < 0 || lfoIndex >= 8) return;
+    try {
+        EtherSynth* etherSynth = reinterpret_cast<EtherSynth*>(synth);
+        std::cout << "C Bridge: Assign I" << instrument << " LFO" << (lfoIndex+1)
+                  << " -> ParamID " << paramId << " depth=" << depth << std::endl;
+        // TODO: Implement mapping ParamID→keyIndex or direct routing in engine
+    } catch (const std::exception& e) {
+        std::cerr << "C Bridge: Assign LFO to ParamID error: " << e.what() << std::endl;
+    }
+}
+
+void ether_remove_lfo_assignment_by_param(EtherSynthCpp* synth, int instrument, int lfoIndex, int paramId) {
+    if (!synth || instrument < 0 || instrument >= 8) return;
+    if (lfoIndex < 0 || lfoIndex >= 8) return;
+    try {
+        EtherSynth* etherSynth = reinterpret_cast<EtherSynth*>(synth);
+        std::cout << "C Bridge: Remove I" << instrument << " LFO" << (lfoIndex+1)
+                  << " from ParamID " << paramId << std::endl;
+        // TODO: Implement mapping ParamID→keyIndex or direct routing in engine
+    } catch (const std::exception& e) {
+        std::cerr << "C Bridge: Remove LFO by ParamID error: " << e.what() << std::endl;
+    }
+}
+
 void ether_set_lfo_waveform(EtherSynthCpp* synth, int instrument, int lfoIndex, int waveform) {
     if (!synth || instrument < 0 || instrument >= 8) return;
-    if (lfoIndex < 0 || lfoIndex >= 4 || waveform < 0) return;
+    if (lfoIndex < 0 || lfoIndex >= 8 || waveform < 0) return;
     
     try {
         EtherSynth* etherSynth = reinterpret_cast<EtherSynth*>(synth);
@@ -628,7 +654,7 @@ void ether_set_lfo_waveform(EtherSynthCpp* synth, int instrument, int lfoIndex, 
 
 void ether_set_lfo_rate(EtherSynthCpp* synth, int instrument, int lfoIndex, float rate) {
     if (!synth || instrument < 0 || instrument >= 8) return;
-    if (lfoIndex < 0 || lfoIndex >= 4) return;
+    if (lfoIndex < 0 || lfoIndex >= 8) return;
     
     try {
         EtherSynth* etherSynth = reinterpret_cast<EtherSynth*>(synth);
@@ -641,7 +667,7 @@ void ether_set_lfo_rate(EtherSynthCpp* synth, int instrument, int lfoIndex, floa
 
 void ether_set_lfo_depth(EtherSynthCpp* synth, int instrument, int lfoIndex, float depth) {
     if (!synth || instrument < 0 || instrument >= 8) return;
-    if (lfoIndex < 0 || lfoIndex >= 4) return;
+    if (lfoIndex < 0 || lfoIndex >= 8) return;
     
     try {
         EtherSynth* etherSynth = reinterpret_cast<EtherSynth*>(synth);
@@ -654,7 +680,7 @@ void ether_set_lfo_depth(EtherSynthCpp* synth, int instrument, int lfoIndex, flo
 
 void ether_set_lfo_sync(EtherSynthCpp* synth, int instrument, int lfoIndex, int syncMode) {
     if (!synth || instrument < 0 || instrument >= 8) return;
-    if (lfoIndex < 0 || lfoIndex >= 4) return;
+    if (lfoIndex < 0 || lfoIndex >= 8) return;
     
     try {
         EtherSynth* etherSynth = reinterpret_cast<EtherSynth*>(synth);
@@ -690,7 +716,7 @@ int ether_get_parameter_lfo_info(EtherSynthCpp* synth, int instrument, int keyIn
     try {
         EtherSynth* etherSynth = reinterpret_cast<EtherSynth*>(synth);
         // TODO: Get actual LFO info for this parameter
-        *activeLFOs = 0;   // Bitmask of active LFOs (1-4)
+        *activeLFOs = 0;   // Bitmask of active LFOs (1-16)
         *currentValue = 0.0f; // Current combined LFO value
         return 0; // Has LFO flag
     } catch (const std::exception& e) {

@@ -72,6 +72,13 @@ enum class ParameterID : uint8_t {
     // Mix parameters
     VOLUME,
     PAN,
+    HPF,
+    AMPLITUDE,      // Additional consistent mix control (engine-internal level)
+    CLIP,           // Soft clip / drive amount
+    
+    // Expressive/engine params
+    ACCENT_AMOUNT,
+    GLIDE_TIME,
     
     COUNT
 };
@@ -92,6 +99,10 @@ enum class EngineType : uint8_t {
     DRUM_KIT,
     SAMPLER_KIT,
     SAMPLER_SLICER,
+    SLIDE_ACCENT_BASS,
+    CLASSIC_4OP_FM,
+    GRANULAR,
+    SERIAL_HPLP,
     COUNT
 };
 

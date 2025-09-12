@@ -1,5 +1,5 @@
 #pragma once
-#include "SynthEngineBase.h"
+#include "../synthesis/SynthEngine.h"
 #include "../audio/ZDFLadderFilter.h"
 #include "../audio/VirtualAnalogOscillator.h"
 #include "../audio/ADSREnvelope.h"
@@ -23,7 +23,7 @@
  * - TIMBRE: Oscillator shape + sub oscillator blend + drive
  * - MORPH: Slide time + accent amount + filter envelope depth
  */
-class SlideAccentBassEngine {
+class SlideAccentBassEngine : public SynthEngine {
 public:
     enum class SlideMode {
         OFF,            // No slide
@@ -144,7 +144,7 @@ public:
     // Voice control
     void noteOn(float note, float velocity, bool accent = false, float slideTimeMs = 0.0f);
     void noteOff(float releaseTime = 0.0f);
-    void allNotesOff();
+    // Note: allNotesOff() now implemented as SynthEngine override
     
     // Legato and slide control
     void setLegato(bool legato) { voiceState_.legato = legato; }
@@ -168,11 +168,43 @@ public:
     float getSlideProgress() const { return voiceState_.slideProgress; }
     float getAccentAmount() const { return voiceState_.accentAmount; }
     float getFilterCutoff() const;
-    float getCPUUsage() const;
+    float getCPUUsage() const override;
     
     // Preset management
     void reset();
     void setPreset(const std::string& presetName);
+    
+    // SynthEngine interface implementation
+    EngineType getType() const override { return EngineType::SLIDE_ACCENT_BASS; }
+    const char* getName() const override { return "SlideAccentBass"; }
+    const char* getDescription() const override { return "Specialized mono bass engine with slide and accent"; }
+    
+    // SynthEngine note methods (adapt existing methods)
+    void noteOn(uint8_t note, float velocity, float aftertouch = 0.0f) override;
+    void noteOff(uint8_t note) override;
+    void setAftertouch(uint8_t note, float aftertouch) override;
+    void allNotesOff() override;
+    
+    // SynthEngine parameter methods
+    void setParameter(ParameterID param, float value) override;
+    float getParameter(ParameterID param) const override;
+    bool hasParameter(ParameterID param) const override;
+    
+    // SynthEngine audio processing
+    void processAudio(EtherAudioBuffer& outputBuffer) override;
+    
+    // SynthEngine voice management
+    size_t getActiveVoiceCount() const override { return isActive() ? 1 : 0; }
+    size_t getMaxVoiceCount() const override { return 1; } // Mono engine
+    void setVoiceCount(size_t maxVoices) override {} // Mono engine ignores this
+    
+    // SynthEngine preset methods
+    void savePreset(uint8_t* data, size_t maxSize, size_t& actualSize) const override;
+    bool loadPreset(const uint8_t* data, size_t size) override;
+    
+    // SynthEngine configuration
+    void setSampleRate(float sampleRate) override;
+    void setBufferSize(size_t bufferSize) override;
     
 private:
     // Core audio components

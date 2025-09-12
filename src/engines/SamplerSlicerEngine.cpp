@@ -1,171 +1,156 @@
 #include "SamplerSlicerEngine.h"
-#include <algorithm>
 #include <cmath>
 
-namespace SamplerSlicer {
-
-//-----------------------------------------------------------------------------
-// SliceDetector Implementation
-//-----------------------------------------------------------------------------
-
-std::vector<size_t> SliceDetector::detectTransients(const std::vector<int16_t>& buffer, 
-                                                   int channels, float sampleRate, 
-                                                   float sensitivity) {
-    std::vector<size_t> transients;
-    
-    if (buffer.empty()) return transients;
-    
-    const int frameSize = 512;  // Analysis frame size
-    const int hopSize = frameSize / 4;  // 75% overlap
-    const size_t totalFrames = buffer.size() / channels;
-    
-    std::vector<float> energyHistory;
-    std::vector<float> fluxHistory;
-    
-    // First pass: Calculate energy and spectral flux
-    for (size_t pos = 0; pos + frameSize < totalFrames; pos += hopSize) {
-        // Extract mono frame (average channels if stereo)
-        std::vector<float> frame(frameSize);
-        for (int i = 0; i < frameSize; ++i) {
-            float sample = 0.0f;
-            for (int ch = 0; ch < channels; ++ch) {
-                size_t idx = (pos + i) * channels + ch;
-                if (idx < buffer.size()) {
-                    sample += static_cast<float>(buffer[idx]) / 32768.0f;
-                }
-            }
-            frame[i] = sample / channels;
-        }
-        
-        float energy = calculateEnergy(frame.data(), frameSize);
-        float flux = calculateSpectralFlux(frame.data(), frameSize);
-        
-        energyHistory.push_back(energy);
-        fluxHistory.push_back(flux);
-    }
-    
-    // Second pass: Find peaks
-    const float threshold = 0.1f + sensitivity * 0.4f;  // Adaptive threshold
-    const size_t minDistance = static_cast<size_t>(0.05f * sampleRate / hopSize);  // Min 50ms between transients
-    
-    for (size_t i = 2; i < energyHistory.size() - 2; ++i) {
-        float currentEnergy = energyHistory[i];
-        float currentFlux = fluxHistory[i];
-        
-        // Combined energy and flux detection
-        float score = currentEnergy * 0.6f + currentFlux * 0.4f;
-        
-        // Check if it's a local maximum
-        bool isPeak = (score > energyHistory[i-1]) && (score > energyHistory[i+1]) && 
-                     (score > energyHistory[i-2]) && (score > energyHistory[i+2]);
-        
-        if (isPeak && score > threshold) {
-            size_t framePos = i * hopSize;
-            
-            // Check minimum distance from previous transient
-            bool farEnough = transients.empty() || 
-                           (framePos - transients.back()) >= minDistance;
-            
-            if (farEnough) {
-                transients.push_back(framePos);
-            }
-        }
-    }
-    
-    // Always include start and end
-    if (transients.empty() || transients.front() > 0) {
-        transients.insert(transients.begin(), 0);
-    }
-    if (transients.back() < totalFrames - 1) {
-        transients.push_back(totalFrames - 1);
-    }
-    
-    // Limit to 25 slices maximum
-    if (transients.size() > 25) {
-        transients.resize(25);
-    }
-    
-    return transients;
+SamplerSlicerEngine::SamplerSlicerEngine() 
+    : sampleRate_(44100.0f), initialized_(false), active_(false), 
+      harmonics_(0.5f), timbre_(0.0f), morph_(0.0f), cpuUsage_(0.0f) {
 }
 
-std::vector<size_t> SliceDetector::detectGrid(size_t totalFrames, int divisions) {
-    std::vector<size_t> slices;
-    
-    // Clamp divisions to reasonable range
-    divisions = std::clamp(divisions, 2, 32);
-    
-    for (int i = 0; i <= divisions; ++i) {
-        size_t pos = (totalFrames * i) / divisions;
-        slices.push_back(pos);
-    }
-    
-    // Limit to 25 slices
-    if (slices.size() > 25) {
-        slices.resize(25);
-    }
-    
-    return slices;
+SamplerSlicerEngine::~SamplerSlicerEngine() {
+    shutdown();
 }
 
-std::vector<size_t> SliceDetector::snapToZeroCrossings(const std::vector<int16_t>& buffer,
-                                                       const std::vector<size_t>& roughSlices,
-                                                       int channels, int windowSize) {
-    std::vector<size_t> snappedSlices;
-    
-    for (size_t roughPos : roughSlices) {
-        size_t bestPos = roughPos;
-        int minCrossing = std::numeric_limits<int>::max();
-        
-        // Search within window for zero crossing
-        int startSearch = std::max(0, static_cast<int>(roughPos) - windowSize);
-        int endSearch = std::min(static_cast<int>(buffer.size() / channels), 
-                                static_cast<int>(roughPos) + windowSize);
-        
-        for (int pos = startSearch; pos < endSearch - 1; ++pos) {
-            // Check for zero crossing (sign change)
-            int16_t current = buffer[pos * channels];  // Use first channel
-            int16_t next = buffer[(pos + 1) * channels];
-            
-            if ((current <= 0 && next > 0) || (current > 0 && next <= 0)) {
-                // Found zero crossing - check how close to zero
-                int crossingValue = std::abs(current) + std::abs(next);
-                if (crossingValue < minCrossing) {
-                    minCrossing = crossingValue;
-                    bestPos = pos;
-                }
-            }
-        }
-        
-        snappedSlices.push_back(bestPos);
+bool SamplerSlicerEngine::initialize(float sampleRate) {
+    if (initialized_) {
+        return true;
     }
     
-    return snappedSlices;
+    sampleRate_ = sampleRate;
+    initialized_ = true;
+    return true;
 }
 
-float SliceDetector::calculateEnergy(const float* window, int size) {
-    float energy = 0.0f;
-    for (int i = 0; i < size; ++i) {
-        energy += window[i] * window[i];
-    }
-    return std::sqrt(energy / size);
-}
-
-float SliceDetector::calculateSpectralFlux(const float* window, int size) {
-    // Simplified spectral flux using high-frequency energy
-    // In a real implementation, this would use FFT
-    
-    float highFreqEnergy = 0.0f;
-    float lowFreqEnergy = 0.0f;
-    
-    // Simple high-pass and low-pass filtering approximation
-    for (int i = 1; i < size; ++i) {
-        float diff = window[i] - window[i-1];  // High frequency content
-        highFreqEnergy += diff * diff;
-        lowFreqEnergy += window[i] * window[i];
+void SamplerSlicerEngine::shutdown() {
+    if (!initialized_) {
+        return;
     }
     
-    // Return ratio of high to low frequency energy
-    return (lowFreqEnergy > 0.0f) ? std::sqrt(highFreqEnergy / lowFreqEnergy) : 0.0f;
+    allNotesOff();
+    initialized_ = false;
 }
 
-} // namespace SamplerSlicer
+void SamplerSlicerEngine::noteOn(uint8_t note, float velocity, float aftertouch) {
+    active_ = true;
+}
+
+void SamplerSlicerEngine::noteOff(uint8_t note) {
+    active_ = false;
+}
+
+void SamplerSlicerEngine::setAftertouch(uint8_t note, float aftertouch) {
+    // Not supported
+}
+
+void SamplerSlicerEngine::allNotesOff() {
+    active_ = false;
+}
+
+void SamplerSlicerEngine::setParameter(ParameterID param, float value) {
+    switch (param) {
+        case ParameterID::HARMONICS:
+            harmonics_ = value;
+            break;
+        case ParameterID::TIMBRE:
+            timbre_ = value;
+            break;
+        case ParameterID::MORPH:
+            morph_ = value;
+            break;
+        default:
+            break;
+    }
+}
+
+float SamplerSlicerEngine::getParameter(ParameterID param) const {
+    switch (param) {
+        case ParameterID::HARMONICS:
+            return harmonics_;
+        case ParameterID::TIMBRE:
+            return timbre_;
+        case ParameterID::MORPH:
+            return morph_;
+        default:
+            return 0.0f;
+    }
+}
+
+bool SamplerSlicerEngine::hasParameter(ParameterID param) const {
+    switch (param) {
+        case ParameterID::HARMONICS:
+        case ParameterID::TIMBRE:
+        case ParameterID::MORPH:
+            return true;
+        default:
+            return false;
+    }
+}
+
+void SamplerSlicerEngine::processAudio(EtherAudioBuffer& outputBuffer) {
+    if (!initialized_) {
+        outputBuffer.fill(AudioFrame(0.0f, 0.0f));
+        return;
+    }
+    
+    for (size_t i = 0; i < BUFFER_SIZE; i++) {
+        float sample = processSample();
+        outputBuffer[i] = AudioFrame(sample, sample);
+    }
+}
+
+size_t SamplerSlicerEngine::getActiveVoiceCount() const {
+    return active_ ? 1 : 0;
+}
+
+void SamplerSlicerEngine::savePreset(uint8_t* data, size_t maxSize, size_t& actualSize) const {
+    actualSize = 0;
+    if (maxSize < sizeof(float) * 3) {
+        return;
+    }
+    
+    float* floatData = reinterpret_cast<float*>(data);
+    floatData[0] = harmonics_;
+    floatData[1] = timbre_;
+    floatData[2] = morph_;
+    actualSize = sizeof(float) * 3;
+}
+
+bool SamplerSlicerEngine::loadPreset(const uint8_t* data, size_t size) {
+    if (size < sizeof(float) * 3) {
+        return false;
+    }
+    
+    const float* floatData = reinterpret_cast<const float*>(data);
+    harmonics_ = floatData[0];
+    timbre_ = floatData[1];
+    morph_ = floatData[2];
+    return true;
+}
+
+void SamplerSlicerEngine::setSampleRate(float sampleRate) {
+    if (sampleRate_ != sampleRate) {
+        shutdown();
+        initialize(sampleRate);
+    }
+}
+
+void SamplerSlicerEngine::setBufferSize(size_t bufferSize) {
+    // Buffer size changes handled automatically
+}
+
+float SamplerSlicerEngine::getCPUUsage() const {
+    return cpuUsage_;
+}
+
+float SamplerSlicerEngine::processSample() {
+    if (!active_) {
+        return 0.0f;
+    }
+    
+    // Simple oscillator for testing
+    static float phase = 0.0f;
+    float freq = 440.0f * (1.0f + harmonics_);
+    phase += freq / sampleRate_;
+    if (phase >= 1.0f) phase -= 1.0f;
+    
+    return std::sin(phase * 2.0f * M_PI) * 0.1f;
+}

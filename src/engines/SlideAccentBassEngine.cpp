@@ -22,28 +22,29 @@ SlideAccentBassEngine::SlideAccentBassEngine() {
     slideConfig_.portamentoAmount = 1.0f;
     
     accentConfig_.mode = AccentMode::VELOCITY;
-    accentConfig_.velocityThreshold = 100.0f;
-    accentConfig_.volumeBoost = 6.0f;
-    accentConfig_.cutoffBoost = 20.0f;
-    accentConfig_.resonanceBoost = 15.0f;
-    accentConfig_.driveBoost = 25.0f;
-    accentConfig_.decayTime = 0.05f;
+    accentConfig_.velocityThreshold = 80.0f;
+    accentConfig_.volumeBoost = 8.0f;
+    accentConfig_.cutoffBoost = 35.0f;
+    accentConfig_.resonanceBoost = 20.0f;
+    accentConfig_.driveBoost = 35.0f;
+    accentConfig_.decayTime = 0.08f;
     accentConfig_.accentEnvelope = true;
     
-    filterConfig_.cutoffHz = 1000.0f;
-    filterConfig_.resonance = 0.3f;
+    // Acid-leaning defaults
+    filterConfig_.cutoffHz = 600.0f;
+    filterConfig_.resonance = 0.7f;
     filterConfig_.keyTracking = 0.5f;
-    filterConfig_.envelopeDepth = 0.6f;
+    filterConfig_.envelopeDepth = 1.0f;
     filterConfig_.velocitySensitivity = 0.4f;
     filterConfig_.autoResonanceRide = true;
     filterConfig_.saturationDrive = 0.2f;
     
-    oscConfig_.shape = 0.2f; // Slightly toward saw wave
+    oscConfig_.shape = 1.0f; // Saw wave bias
     oscConfig_.pulseWidth = 0.5f;
     oscConfig_.subLevel = 0.3f;
     oscConfig_.subShape = 0.0f; // Pure sine for sub
     oscConfig_.subOctave = -1;
-    oscConfig_.drive = 0.2f;
+    oscConfig_.drive = 0.5f; // More bite
     oscConfig_.noiseLevel = 0.05f;
     
     phaseResetPolicy_ = PhaseResetPolicy::NON_LEGATO;
@@ -125,8 +126,8 @@ bool SlideAccentBassEngine::initialize(float sampleRate) {
     volumeSmoother_.initialize(sampleRate, 0.001f); // 1ms smoothing
     
     // Configure envelopes
-    ampEnvelope_.setADSR(0.001f, 0.1f, 0.8f, 0.05f); // Fast attack, moderate decay
-    filterEnvelope_.setADSR(0.001f, 0.3f, 0.3f, 0.1f); // Quick filter envelope
+    ampEnvelope_.setADSR(0.001f, 0.08f, 0.7f, 0.07f); // TB-ish contour
+    filterEnvelope_.setADSR(0.001f, 0.2f, 0.2f, 0.08f); // Snappier filter env
     
     // Configure oscillators
     mainOsc_.setWaveform(VirtualAnalogOscillator::SAWTOOTH);
@@ -762,4 +763,133 @@ void SlideAccentBassEngine::setPreset(const std::string& presetName) {
     // Preset loading would be implemented here
     // For now, just reset to defaults
     reset();
+}
+
+// SynthEngine interface implementations
+void SlideAccentBassEngine::noteOn(uint8_t note, float velocity, float aftertouch) {
+    // Normalize velocity: accept 0..1 or 0..127
+    float velNorm = (velocity > 1.0f) ? (velocity / 127.0f) : velocity;
+    bool accented = velNorm >= 0.8f;
+    noteOn(static_cast<float>(note), velNorm, accented);
+}
+
+void SlideAccentBassEngine::noteOff(uint8_t note) {
+    // Use default release time
+    noteOff(0.0f);
+}
+
+void SlideAccentBassEngine::setAftertouch(uint8_t note, float aftertouch) {
+    // Store aftertouch value for modulation (add field to VoiceState if needed)
+    // For now, just ignore aftertouch
+}
+
+void SlideAccentBassEngine::setParameter(ParameterID param, float value) {
+    // Map ParameterID to HTM parameters
+    switch (param) {
+        case ParameterID::HARMONICS:
+            setHarmonics(value);
+            break;
+        case ParameterID::TIMBRE:
+            setTimbre(value);
+            break;
+        case ParameterID::MORPH:
+            setMorph(value);
+            break;
+        case ParameterID::ACCENT_AMOUNT: {
+            float amt = clamp(value, 0.0f, 1.0f);
+            accentConfig_.volumeBoost = 4.0f + amt * 10.0f;   // 4..14 dB
+            accentConfig_.cutoffBoost = 10.0f + amt * 50.0f;  // widen
+            accentConfig_.resonanceBoost = 10.0f + amt * 30.0f;
+            accentConfig_.driveBoost = 10.0f + amt * 40.0f;
+            break;
+        }
+        case ParameterID::GLIDE_TIME: {
+            float amt = clamp(value, 0.0f, 1.0f);
+            slideConfig_.minTimeMs = 5.0f;
+            slideConfig_.maxTimeMs = 200.0f + amt * 400.0f; // up to ~600ms
+            slideConfig_.portamentoAmount = 0.1f + amt * 1.9f;
+            break;
+        }
+        default:
+            // Other parameters can be ignored for now
+            break;
+    }
+}
+
+float SlideAccentBassEngine::getParameter(ParameterID param) const {
+    // Return current parameter values
+    float h, t, m;
+    getHTMParameters(h, t, m);
+    
+    switch (param) {
+        case ParameterID::HARMONICS:
+            return h;
+        case ParameterID::TIMBRE:
+            return t;
+        case ParameterID::MORPH:
+            return m;
+        case ParameterID::ACCENT_AMOUNT:
+            return clamp((accentConfig_.volumeBoost - 4.0f) / 10.0f, 0.0f, 1.0f);
+        case ParameterID::GLIDE_TIME:
+            return clamp((slideConfig_.portamentoAmount - 0.1f) / 1.9f, 0.0f, 1.0f);
+        default:
+            return 0.0f;
+    }
+}
+
+bool SlideAccentBassEngine::hasParameter(ParameterID param) const {
+    // Support HTM parameters
+    return (param == ParameterID::HARMONICS || 
+            param == ParameterID::TIMBRE || 
+            param == ParameterID::MORPH ||
+            param == ParameterID::ACCENT_AMOUNT ||
+            param == ParameterID::GLIDE_TIME);
+}
+
+void SlideAccentBassEngine::processAudio(EtherAudioBuffer& outputBuffer) {
+    // EtherAudioBuffer is std::array<AudioFrame, BUFFER_SIZE>
+    // Process mono and duplicate to stereo
+    for (size_t i = 0; i < outputBuffer.size(); i++) {
+        float sample = processSample();
+        outputBuffer[i].left = sample;
+        outputBuffer[i].right = sample;
+    }
+}
+
+void SlideAccentBassEngine::savePreset(uint8_t* data, size_t maxSize, size_t& actualSize) const {
+    // Simple preset saving - store HTM values
+    if (maxSize >= 3 * sizeof(float)) {
+        float h, t, m;
+        getHTMParameters(h, t, m);
+        
+        float* floatData = reinterpret_cast<float*>(data);
+        floatData[0] = h;
+        floatData[1] = t;
+        floatData[2] = m;
+        actualSize = 3 * sizeof(float);
+    } else {
+        actualSize = 0;
+    }
+}
+
+bool SlideAccentBassEngine::loadPreset(const uint8_t* data, size_t size) {
+    // Simple preset loading - restore HTM values
+    if (size >= 3 * sizeof(float)) {
+        const float* floatData = reinterpret_cast<const float*>(data);
+        setHTMParameters(floatData[0], floatData[1], floatData[2]);
+        return true;
+    }
+    return false;
+}
+
+void SlideAccentBassEngine::setSampleRate(float sampleRate) {
+    sampleRate_ = sampleRate;
+    // Ensure engine components are initialized with current sample rate
+    if (!initialized_) {
+        initialize(sampleRate_);
+    }
+}
+
+void SlideAccentBassEngine::setBufferSize(size_t bufferSize) {
+    bufferSize_ = bufferSize;
 }

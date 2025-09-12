@@ -78,12 +78,13 @@ private:
         uint32_t getAge() const { return voiceState_.getAge(0); } // Age calculation needs current time
         
         // Parameter control
-        void setFilterParams(float cutoff, float autoQ);
+        void setFilterParams(float cutoff, float autoQ, float baseRes);
         void setOscParams(float sawPulseBlend, float pwm);
         void setSubNoiseParams(float subLevel, float noiseLevel);
         void setHighTilt(float tiltAmount);
         void setVolume(float volume);
         void setEnvelopeParams(float attack, float decay, float sustain, float release);
+        void setHPF(float hz) { hpf_.setCutoff(hz); }
         
     private:
         // Enhanced oscillator with PWM
@@ -103,17 +104,50 @@ private:
             }
             
             float processSaw() {
-                float output = 2.0f * phase - 1.0f;
+                // PolyBLEP band-limited saw
+                float t = phase;
+                float out = 2.0f * t - 1.0f;
+                // apply BLEP at discontinuity
+                if (increment > 0.0f) {
+                    if (t < increment) {
+                        float dt = t / increment;
+                        out -= (dt + dt - dt*dt - 1.0f);
+                    } else if (t > 1.0f - increment) {
+                        float dt = (t - 1.0f) / increment;
+                        out += (dt + dt + dt*dt + 1.0f);
+                    }
+                }
                 phase += increment;
                 if (phase >= 1.0f) phase -= 1.0f;
-                return output;
+                return out;
             }
             
             float processPulse() {
-                float output = (phase < pwm) ? 1.0f : -1.0f;
+                // PolyBLEP band-limited pulse (square with PWM)
+                float t = phase;
+                float out = (t < pwm) ? 1.0f : -1.0f;
+                if (increment > 0.0f) {
+                    // rising edge at t=0
+                    if (t < increment) {
+                        float dt = t / increment;
+                        out -= (dt + dt - dt*dt - 1.0f);
+                    } else if (t > 1.0f - increment) {
+                        float dt = (t - 1.0f) / increment;
+                        out += (dt + dt + dt*dt + 1.0f);
+                    }
+                    // falling edge at t=pwm
+                    float tf = t - pwm;
+                    if (tf >= 0.0f && tf < increment) {
+                        float dt = tf / increment;
+                        out += (dt + dt - dt*dt - 1.0f);
+                    } else if (tf < 0.0f && tf > -increment) {
+                        float dt = (tf + increment) / increment;
+                        out -= (dt + dt + dt*dt + 1.0f);
+                    }
+                }
                 phase += increment;
                 if (phase >= 1.0f) phase -= 1.0f;
-                return output;
+                return out;
             }
         };
         
@@ -179,6 +213,27 @@ private:
             float process();
         };
         
+        // Simple HPF for low-cut
+        struct SimpleHPF {
+            float cutoff = 20.0f;
+            float a = 0.0f;
+            float y1 = 0.0f;
+            float x1 = 0.0f;
+            float sampleRate = 48000.0f;
+            void setCutoff(float hz) {
+                cutoff = std::clamp(hz, 10.0f, sampleRate*0.45f);
+                float rc = 1.0f / (2.0f * M_PI * cutoff);
+                float dt = 1.0f / sampleRate;
+                a = rc / (rc + dt);
+            }
+            float process(float x) {
+                float y = a * (y1 + x - x1);
+                y1 = y;
+                x1 = x;
+                return y;
+            }
+        } hpf_;
+
         // Enhanced filter with auto-Q
         struct VAFilter {
             float cutoff = 1000.0f;
@@ -192,6 +247,7 @@ private:
             void updateCoefficients();
             void setCutoff(float freq);
             void setAutoQ(float q);
+            void setResonance(float q) { baseResonance = std::max(0.1f, q); updateCoefficients(); }
             float process(float input);
         };
         
@@ -228,6 +284,8 @@ private:
         float highTilt_ = 0.0f;      // ±2 dB @ 4kHz
         float volume_ = 0.8f;
         float noteFrequency_ = 440.0f;
+        
+        // moved public
     };
     
     // Voice management
@@ -254,6 +312,9 @@ private:
     
     // Additional parameters
     float volume_ = 0.8f;
+    float pan_ = 0.5f; // 0 left .. 1 right
+    float baseResonance_ = 1.0f;
+    float hpfCutNorm_ = 0.0f; // 0..1 maps to 20..200 Hz
     float attack_ = 0.01f;
     float decay_ = 0.3f;
     float sustain_ = 0.8f;

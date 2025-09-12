@@ -2654,9 +2654,46 @@ struct CloneOverlay: View {
 }
 
 // MARK: - FX Overlay
+
+// Canonical FX types used by the UI menu
+private enum FXType: Int, CaseIterable {
+    case tape = 0
+    case delay = 1
+    case reverb = 2
+    case filter = 3
+
+    var displayName: String {
+        switch self {
+        case .tape: return "TAPE"
+        case .delay: return "DELAY"
+        case .reverb: return "REVERB"
+        case .filter: return "FILTER"
+        }
+    }
+
+    var color: Color {
+        switch self {
+        case .tape: return .orange
+        case .delay: return .green
+        case .reverb: return .blue
+        case .filter: return .purple
+        }
+    }
+
+    // Sensible default insertion slots for each FX type
+    var defaultSlot: Int {
+        switch self {
+        case .tape: return 1      // POST_ENGINE
+        case .delay: return 3     // SEND_2
+        case .reverb: return 2    // SEND_1
+        case .filter: return 0    // PRE_FILTER
+        }
+    }
+}
+
 struct FXOverlay: View {
     @EnvironmentObject var appState: EtherSynthState
-    @State private var selectedEffectType: Int = 0  // 0=Tape, 1=Delay, 2=Reverb, 3=Filter
+    @State private var selectedFX: FXType = .tape
     @State private var showingParameters: Bool = false
     
     var body: some View {
@@ -2685,30 +2722,44 @@ struct FXOverlay: View {
             .padding(.vertical, 8)
             .background(Color(red: 0.96, green: 0.97, blue: 0.98))
             
-            // Effect Type Selection
-            HStack(spacing: 4) {
-                EffectTypeButton(title: "TAPE", type: 0, isSelected: selectedEffectType == 0, color: Color.orange) {
-                    selectedEffectType = 0
-                    let effectId = appState.addEffect(type: 0, slot: 1) // TAPE_SATURATION to POST_ENGINE slot
-                    showingParameters = true
+            // Effect Type Selection (single source of truth)
+            HStack(spacing: 8) {
+                Menu {
+                    ForEach(FXType.allCases, id: \.rawValue) { fx in
+                        Button(fx.displayName) {
+                            selectedFX = fx
+                            let _ = appState.addEffect(type: fx.rawValue, slot: fx.defaultSlot)
+                            showingParameters = true
+                        }
+                    }
+                } label: {
+                    HStack(spacing: 6) {
+                        Circle().fill(selectedFX.color).frame(width: 10, height: 10)
+                        Text(selectedFX.displayName)
+                            .font(.custom("Barlow Condensed", size: 11))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
+                            .background(selectedFX.color)
+                            .cornerRadius(6)
+                    }
                 }
-                
-                EffectTypeButton(title: "DELAY", type: 1, isSelected: selectedEffectType == 1, color: Color.green) {
-                    selectedEffectType = 1
-                    let effectId = appState.addEffect(type: 1, slot: 3) // DELAY to SEND_2 slot
-                    showingParameters = true
-                }
-                
-                EffectTypeButton(title: "REVERB", type: 2, isSelected: selectedEffectType == 2, color: Color.blue) {
-                    selectedEffectType = 2
-                    let effectId = appState.addEffect(type: 2, slot: 2) // REVERB to SEND_1 slot
-                    showingParameters = true
-                }
-                
-                EffectTypeButton(title: "FILTER", type: 3, isSelected: selectedEffectType == 3, color: Color.purple) {
-                    selectedEffectType = 3
-                    let effectId = appState.addEffect(type: 3, slot: 0) // FILTER to PRE_FILTER slot
-                    showingParameters = true
+
+                // Quick-pick buttons (kept for speed, driven by same enum)
+                ForEach(FXType.allCases, id: \.rawValue) { fx in
+                    Button(action: {
+                        selectedFX = fx
+                        let _ = appState.addEffect(type: fx.rawValue, slot: fx.defaultSlot)
+                        showingParameters = true
+                    }) {
+                        Text(fx.displayName)
+                            .font(.custom("Barlow Condensed", size: 11))
+                            .foregroundColor(.white)
+                            .frame(width: 70, height: 28)
+                            .background((selectedFX == fx) ? fx.color : fx.color.opacity(0.6))
+                            .cornerRadius(6)
+                    }
+                    .buttonStyle(PlainButtonStyle())
                 }
             }
             .padding(.horizontal, 12)
@@ -2813,7 +2864,7 @@ struct FXOverlay: View {
             // Parameter Control Interface (when effect selected)
             if showingParameters && appState.currentEffectID != 0 {
                 Divider()
-                EffectParameterInterface(effectId: appState.currentEffectID, effectType: selectedEffectType)
+                EffectParameterInterface(effectId: appState.currentEffectID, effectType: selectedFX.rawValue)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 8)
             }

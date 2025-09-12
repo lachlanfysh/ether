@@ -338,6 +338,7 @@ private:
     
     // Additional parameters
     float volume_ = 0.8f;
+    float pan_ = 0.5f;
     float attack_ = 0.01f;
     float decay_ = 0.3f;
     float sustain_ = 0.8f;

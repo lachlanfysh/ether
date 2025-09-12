@@ -78,6 +78,9 @@ void RingsVoiceEngine::setParameter(ParameterID param, float value) {
             volume_ = std::clamp(value, 0.0f, 1.0f);
             updateAllVoices();
             break;
+        case ParameterID::PAN:
+            pan_ = std::clamp(value, 0.0f, 1.0f);
+            break;
             
         case ParameterID::ATTACK:
             attack_ = std::clamp(value, 0.001f, 5.0f);
@@ -110,6 +113,7 @@ float RingsVoiceEngine::getParameter(ParameterID param) const {
         case ParameterID::TIMBRE: return timbre_;
         case ParameterID::MORPH: return morph_;
         case ParameterID::VOLUME: return volume_;
+        case ParameterID::PAN: return pan_;
         case ParameterID::ATTACK: return attack_;
         case ParameterID::DECAY: return decay_;
         case ParameterID::SUSTAIN: return sustain_;
@@ -162,6 +166,16 @@ void RingsVoiceEngine::processAudio(EtherAudioBuffer& outputBuffer) {
         for (auto& frame : outputBuffer) {
             frame = frame * scale;
         }
+    }
+
+    // Apply engine-level pan (equal-power)
+    float theta = pan_ * 3.14159265f * 0.5f; // 0..pi/2
+    float lGain = std::cos(theta);
+    float rGain = std::sin(theta);
+    for (auto& frame : outputBuffer) {
+        float mono = frame.left; // mono content
+        frame.left = mono * lGain;
+        frame.right = mono * rGain;
     }
     
     // Update CPU usage
@@ -648,7 +662,7 @@ AudioFrame RingsVoiceEngine::RingsVoiceImpl::processSample() {
     }
     
     // Apply velocity and volume
-    float output = mixed * envLevel * velocity_ * volume_ * 0.5f; // Scale for physical modeling
+    float output = mixed * envLevel * velocity_ * volume_ * 1.3f; // boost output to match other engines
     
     return AudioFrame(output, output);
 }

@@ -78,7 +78,10 @@ void MacroVAEngine::setParameter(ParameterID param, float value) {
             volume_ = std::clamp(value, 0.0f, 1.0f);
             updateAllVoices();
             break;
-            
+        case ParameterID::PAN:
+            pan_ = std::clamp(value, 0.0f, 1.0f);
+            break;
+
         case ParameterID::ATTACK:
             attack_ = std::clamp(value, 0.0005f, 5.0f); // Min 0.5ms per spec
             updateAllVoices();
@@ -98,6 +101,22 @@ void MacroVAEngine::setParameter(ParameterID param, float value) {
             release_ = std::clamp(value, 0.001f, 5.0f);
             updateAllVoices();
             break;
+
+        case ParameterID::FILTER_CUTOFF:
+            filterCutoff_ = std::clamp(value, 0.0f, 1.0f);
+            filterCutoff_ = mapCutoffExp(filterCutoff_);
+            updateAllVoices();
+            break;
+
+        case ParameterID::FILTER_RESONANCE:
+            // Map 0..1 to reasonable Q base (0.5..10), additive with autoQ
+            baseResonance_ = 0.5f + value * 9.5f;
+            updateAllVoices();
+            break;
+        case ParameterID::HPF:
+            hpfCutNorm_ = std::clamp(value, 0.0f, 1.0f);
+            updateAllVoices();
+            break;
             
         default:
             // Parameter not supported by this engine
@@ -111,10 +130,14 @@ float MacroVAEngine::getParameter(ParameterID param) const {
         case ParameterID::TIMBRE: return timbre_;
         case ParameterID::MORPH: return morph_;
         case ParameterID::VOLUME: return volume_;
+        case ParameterID::PAN: return pan_;
         case ParameterID::ATTACK: return attack_;
         case ParameterID::DECAY: return decay_;
         case ParameterID::SUSTAIN: return sustain_;
         case ParameterID::RELEASE: return release_;
+        case ParameterID::FILTER_CUTOFF: return filterCutoff_;
+        case ParameterID::FILTER_RESONANCE: return baseResonance_;
+        case ParameterID::HPF: return hpfCutNorm_;
         default: return 0.0f;
     }
 }
@@ -125,10 +148,14 @@ bool MacroVAEngine::hasParameter(ParameterID param) const {
         case ParameterID::TIMBRE:
         case ParameterID::MORPH:
         case ParameterID::VOLUME:
+        case ParameterID::PAN:
         case ParameterID::ATTACK:
         case ParameterID::DECAY:
         case ParameterID::SUSTAIN:
         case ParameterID::RELEASE:
+        case ParameterID::FILTER_CUTOFF:
+        case ParameterID::FILTER_RESONANCE:
+        case ParameterID::HPF:
             return true;
         default:
             return false;
@@ -144,7 +171,7 @@ void MacroVAEngine::processAudio(EtherAudioBuffer& outputBuffer) {
         frame.right = 0.0f;
     }
     
-    // Process all active voices
+    // Process all active voices (mono)
     size_t activeVoices = 0;
     for (auto& voice : voices_) {
         if (voice.isActive()) {
@@ -152,7 +179,7 @@ void MacroVAEngine::processAudio(EtherAudioBuffer& outputBuffer) {
             
             for (size_t i = 0; i < BUFFER_SIZE; i++) {
                 AudioFrame voiceFrame = voice.processSample();
-                outputBuffer[i] += voiceFrame;
+                outputBuffer[i] += voiceFrame; // mono summed
             }
         }
     }
@@ -165,6 +192,16 @@ void MacroVAEngine::processAudio(EtherAudioBuffer& outputBuffer) {
         }
     }
     
+    // Apply engine-level pan (equal-power)
+    float theta = pan_ * 3.14159265f * 0.5f; // 0..pi/2
+    float lGain = std::cos(theta);
+    float rGain = std::sin(theta);
+    for (auto& frame : outputBuffer) {
+        float mono = frame.left; // mono content
+        frame.left = mono * lGain;
+        frame.right = mono * rGain;
+    }
+
     // Update CPU usage
     auto end = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
@@ -286,12 +323,16 @@ MacroVAEngine::MacroVAVoice* MacroVAEngine::stealVoice() {
 
 void MacroVAEngine::updateAllVoices() {
     for (auto& voice : voices_) {
-        voice.setFilterParams(filterCutoff_, filterAutoQ_);
+        voice.setFilterParams(filterCutoff_, filterAutoQ_, baseResonance_);
+        voice.setEnvelopeParams(attack_, decay_, sustain_, release_);
+        voice.setVolume(volume_);
         voice.setOscParams(sawPulseBlend_, pwm_);
         voice.setSubNoiseParams(subLevel_, noiseLevel_);
         voice.setHighTilt(highTilt_);
-        voice.setVolume(volume_);
-        voice.setEnvelopeParams(attack_, decay_, sustain_, release_);
+        voice.setFilterParams(filterCutoff_, filterAutoQ_, baseResonance_);
+        // HPF mapping 20..200 Hz
+        float hpfHz = 20.0f + hpfCutNorm_ * 180.0f;
+        voice.setHPF(hpfHz);
     }
 }
 
@@ -450,27 +491,33 @@ AudioFrame MacroVAEngine::MacroVAVoice::processSample() {
     
     // Apply main filter
     float filtered = filter_.process(mixed);
+    // Gentle per-voice soft saturation to prevent harsh clipping
+    auto softclip = [](float x){ return std::tanh(x * 0.8f); };
+    filtered = softclip(filtered);
     
     // Apply high-frequency tilt
     float tilted = tiltFilter_.process(filtered);
+    // Apply HPF low-cut after tilt
+    float lowcut = hpf_.process(tilted);
     
     // Apply envelope
     float envLevel = envelope_->process();
     
     // Check if voice should be deactivated
     if (!envelope_->isActive()) {
-        voiceState_.setInactive();
+        voiceState_.kill();
     }
     
     // Apply velocity and volume
-    float output = tilted * envLevel * voiceState_.velocity_ * volume_;
+    float output = lowcut * envLevel * voiceState_.velocity_ * volume_ * 0.9f; // audible but safe
     
     return AudioFrame(output, output);
 }
 
-void MacroVAEngine::MacroVAVoice::setFilterParams(float cutoff, float autoQ) {
+void MacroVAEngine::MacroVAVoice::setFilterParams(float cutoff, float autoQ, float baseRes) {
     filter_.setCutoff(cutoff);
     filter_.setAutoQ(autoQ);
+    filter_.setResonance(baseRes);
 }
 
 void MacroVAEngine::MacroVAVoice::setOscParams(float sawPulseBlend, float pwm) {
@@ -493,10 +540,7 @@ void MacroVAEngine::MacroVAVoice::setVolume(float volume) {
 }
 
 void MacroVAEngine::MacroVAVoice::setEnvelopeParams(float attack, float decay, float sustain, float release) {
-    envelope_->attack_ = attack;
-    envelope_->decay_ = decay;
-    envelope_->sustain_ = sustain;
-    envelope_->release_ = release;
+    envelope_->setADSR(attack, decay, sustain, release);
 }
 
 // Filter implementations

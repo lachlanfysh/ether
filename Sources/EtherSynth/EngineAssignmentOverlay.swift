@@ -91,14 +91,21 @@ struct EngineAssignmentOverlay: View {
             color: Color.green
         ),
         EngineCategory(
-            name: "Percussion & Samples",
+            name: "Drums",
             engines: [
-                EngineInfo(type: 11, name: "DrumKit", shortDescription: "12-slot drum machine with synthesis models", icon: "dot.radiowaves.left.and.right", heroParameters: ["Level", "Tune", "Snap"]),
-                EngineInfo(type: 12, name: "SamplerKit", shortDescription: "25-pad MPC-style sampler", icon: "square.grid.3x3", heroParameters: ["Level", "Pitch", "Filter"]),
-                EngineInfo(type: 13, name: "SamplerSlicer", shortDescription: "Loop slicer with up to 25 slices", icon: "waveform.path.ecg", heroParameters: ["Level", "Pitch", "Slice"])
+                EngineInfo(type: 11, name: "DrumKit", shortDescription: "12-slot synth drum engine", icon: "dot.radiowaves.left.and.right", heroParameters: ["Level", "Tune", "Snap"], category: "Drums")
             ],
             icon: "dot.radiowaves.left.and.right",
             color: Color.red
+        ),
+        EngineCategory(
+            name: "Samplers",
+            engines: [
+                EngineInfo(type: 12, name: "SamplerKit", shortDescription: "25-pad MPC-style sampler", icon: "square.grid.3x3", heroParameters: ["Level", "Pitch", "Filter"], category: "Sampler"),
+                EngineInfo(type: 13, name: "SamplerSlicer", shortDescription: "Loop slicer with up to 25 slices", icon: "waveform.path.ecg", heroParameters: ["Level", "Pitch", "Slice"], category: "Sampler")
+            ],
+            icon: "square.grid.3x3",
+            color: Color.orange
         )
     ]
     
