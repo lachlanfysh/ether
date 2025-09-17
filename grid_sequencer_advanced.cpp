@@ -445,6 +445,14 @@ static inline int extraMenuRows() {
     return extra;
 }
 
+// Helper: current row's instrument engine type name
+static inline const char* currentInstrumentTypeName() {
+    int slot = rowToSlot[currentEngineRow];
+    if (slot < 0) slot = 0;
+    int t = ether_get_instrument_engine_type(etherEngine, slot);
+    return ether_get_engine_type_name(t);
+}
+
 static void rebuildVisibleParams() {
     visibleParams.clear();
     extendedVisibleParams.clear();
@@ -555,8 +563,98 @@ int getExtendedParameterId(int index) {
     return -1; // Invalid
 }
 
+// Helper for 0-1 clamping
+static inline float clamp01(float v) { return v < 0.0f ? 0.0f : (v > 1.0f ? 1.0f : v); }
+
+// --- Param routing: Engine vs PostFX vs Unsupported ---
+enum class ParamRoute : uint8_t { Engine, PostFX, Unsupported };
+
+// Enable global filter FX for consistent LPF/HPF/RES/AMP/CLIP across all engines
+#define ETHER_HAVE_GLOBAL_FILTER_FX
+
+// Optional: if your backend exposes a global filter FX, define this macro at build time
+// and provide the global FX API below. If not defined, only [E] or [—] will appear.
+#if defined(ETHER_HAVE_GLOBAL_FILTER_FX)
+extern "C" {
+float ether_get_fx_global(void* synth, int which, int param);
+void  ether_set_fx_global(void* synth, int which, int param, float value);
+}
+#endif
+
+static inline ParamRoute resolveParamRoute(int row, int pid) {
+    int slot = rowToSlot[row]; if (slot < 0) slot = 0;
+
+    // Force filter and dynamics parameters to PostFX for consistency across all engines
+    if (pid == static_cast<int>(ParameterID::FILTER_CUTOFF) ||
+        pid == static_cast<int>(ParameterID::FILTER_RESONANCE) ||
+        pid == static_cast<int>(ParameterID::HPF) ||
+        pid == static_cast<int>(ParameterID::AMPLITUDE) ||
+        pid == static_cast<int>(ParameterID::CLIP)) {
+        return ParamRoute::PostFX;
+    }
+
+    // Other parameters: prefer per-engine param if supported
+    if (ether_engine_has_parameter(etherEngine, slot, pid))
+        return ParamRoute::Engine;
+
+    return ParamRoute::Unsupported;
+}
+
+static inline const char* routeTag(ParamRoute r) {
+    switch (r) {
+        case ParamRoute::Engine:  return "[E]";
+        case ParamRoute::PostFX:  return "[FX]";
+        default:                  return "[—]";
+    }
+}
+
+static float getParamNormForDisplay(int row, int pid) {
+    // Always read from local cache for consistent behavior
+    return engineParameters[row][pid];
+}
+
+// Debug probe functions
+static const char* pidName(int pid) {
+    switch ((ParameterID)pid) {
+        case ParameterID::FILTER_CUTOFF:    return "LPF";
+        case ParameterID::FILTER_RESONANCE: return "RES";
+        case ParameterID::HPF:              return "HPF";
+        case ParameterID::AMPLITUDE:        return "AMP";
+        case ParameterID::CLIP:             return "CLIP";
+        default:                            return "OTHER";
+    }
+}
+
+static void debugPrintParamSupportAllRows() {
+    printf("\n=== Engine Param Support (LPF/RES/HPF/AMP/CLIP) ===\n");
+    for (int row = 0; row < 16; ++row) {
+        int slot = rowToSlot[row]; if (slot < 0) slot = 0;
+        int t = ether_get_instrument_engine_type(etherEngine, slot);
+        const char* name = ether_get_engine_type_name(t);
+        int pids[] = {(int)ParameterID::FILTER_CUTOFF,(int)ParameterID::FILTER_RESONANCE,(int)ParameterID::HPF,(int)ParameterID::AMPLITUDE,(int)ParameterID::CLIP};
+        printf("Row %02d  %-12s  ", row, name ? name : "Unknown");
+        for (int pid : pids) {
+            ParamRoute r = resolveParamRoute(row, pid);
+            printf("%s=%s  ", pidName(pid), routeTag(r));
+        }
+        printf("\n");
+    }
+    printf("=== end ===\n");
+}
+
 // Clean, centralized parameter adjustment function
 void adjustParameter(int pid, bool increment) {
+    // Log all parameter adjustment attempts
+    FILE* attemptLog = fopen("parameter_debug.log", "a");
+    if (attemptLog) {
+        int slot = rowToSlot[currentEngineRow];
+        if (slot < 0) slot = 0;
+        fprintf(attemptLog, "ATTEMPT: row=%d slot=%d pid=%d param_name=%s increment=%s engine_type=%s\n",
+                (int)currentEngineRow, slot, pid, pidName(pid), increment ? "true" : "false",
+                ether_get_engine_type_name(ether_get_instrument_engine_type(etherEngine, slot)));
+        fclose(attemptLog);
+    }
+
     // Handle pseudo-parameters
     if (pid == PSEUDO_PARAM_OCTAVE) {
         if (increment) {
@@ -574,13 +672,15 @@ void adjustParameter(int pid, bool increment) {
         return;
     }
 
-    // Regular engine parameters - get current value from engine
+    // Regular engine parameters - get current value from LOCAL CACHE
     int slot = rowToSlot[currentEngineRow];
     if (slot < 0) slot = 0;
-    float currentValue = ether_get_instrument_parameter(etherEngine, slot, pid);
+    float currentValue = engineParameters[currentEngineRow][pid];
 
     // Special handling for FM algorithm (TIMBRE parameter)
-    bool fm = std::string(ether_get_engine_type_name(currentEngineRow)).find("FM") != std::string::npos;
+    int engType = ether_get_instrument_engine_type(etherEngine, slot);
+    const char* etn = ether_get_engine_type_name(engType);
+    bool fm = (etn && std::string(etn).find("FM") != std::string::npos);
     if (pid == static_cast<int>(ParameterID::TIMBRE) && fm) {
         int algo = (int)std::floor(currentValue * 8.0f + 1e-6);
         if (increment) {
@@ -590,41 +690,79 @@ void adjustParameter(int pid, bool increment) {
         }
         currentValue = (algo + 0.5f) / 8.0f;
     } else {
-        // Parameter-specific increment/decrement values
-        float delta = 0.02f; // Default for most parameters
-
-        // Special cases for problematic parameters
-        if (pid == static_cast<int>(ParameterID::FILTER_CUTOFF)) {
-            delta = 100.0f; // LPF Hz
+        // ALWAYS work in normalized 0..1 domain for UI steps; engine maps to Hz/Q/etc.
+        float delta = 0.02f; // default
+        if (pid == static_cast<int>(ParameterID::FILTER_CUTOFF) ||
+            pid == static_cast<int>(ParameterID::HPF)) {
+            // small smooth steps; SHIFT speeds up
+            delta = shiftHeld.load() ? 0.05f : 0.01f;
         } else if (pid == static_cast<int>(ParameterID::FILTER_RESONANCE)) {
-            delta = 0.01f; // Small resonance steps
-        } else if (pid == static_cast<int>(ParameterID::HPF)) {
-            delta = 50.0f; // HPF Hz
+            delta = 0.01f;
         } else if (pid == static_cast<int>(ParameterID::AMPLITUDE) ||
                    pid == static_cast<int>(ParameterID::CLIP)) {
-            delta = (currentValue < 2.0f) ? 0.01f : 0.1f; // Adaptive
+            delta = 0.02f;
         }
 
         if (increment) {
             currentValue += delta;
         } else {
             currentValue -= delta;
-            // Apply minimum bounds
-            if (pid == static_cast<int>(ParameterID::FILTER_CUTOFF)) {
-                currentValue = std::max(20.0f, currentValue); // LPF minimum 20 Hz
-            } else {
-                currentValue = std::max(0.0f, currentValue); // General minimum
-            }
         }
+        // Clamp to normalized range expected by engine
+        currentValue = clamp01(currentValue);
     }
 
-    // Set the new value directly to the engine
-    printf("DEBUG: Setting pid=%d to value=%.3f\n", pid, currentValue);
-    ether_set_instrument_parameter(etherEngine, slot, pid, currentValue);
+    // Update local cache FIRST (cache-first pattern like working version)
+    engineParameters[currentEngineRow][pid] = currentValue;
 
-    // Verify the value was set
-    float verifyValue = ether_get_instrument_parameter(etherEngine, slot, pid);
-    printf("DEBUG: Verified value=%.3f\n", verifyValue);
+    // Route writes based on parameter support
+    ParamRoute route = resolveParamRoute(currentEngineRow, pid);
+
+    // Optional: ensure instrument is active for param writes
+    ether_set_active_instrument(etherEngine, slot);
+
+    switch (route) {
+        case ParamRoute::Engine:
+            // Write cached value to engine (cache-first pattern)
+            ether_set_instrument_parameter(etherEngine, slot, pid, currentValue);
+            break;
+
+        case ParamRoute::PostFX:
+        #if defined(ETHER_HAVE_GLOBAL_FILTER_FX)
+        {
+            constexpr int kGlobalFilterUnit = 2;
+            ether_set_fx_global(etherEngine, kGlobalFilterUnit, pid, currentValue);
+            break;
+        }
+        #else
+            // Fall through to Unsupported
+        #endif
+            [[fallthrough]];
+
+        case ParamRoute::Unsupported:
+            // Log unsupported parameters to file
+            {
+                FILE* unsupportedLog = fopen("parameter_debug.log", "a");
+                if (unsupportedLog) {
+                    fprintf(unsupportedLog, "UNSUPPORTED: row=%d slot=%d pid=%d engine_type=%s param_name=%s\n",
+                            (int)currentEngineRow, slot, pid,
+                            ether_get_engine_type_name(ether_get_instrument_engine_type(etherEngine, slot)),
+                            pidName(pid));
+                    fclose(unsupportedLog);
+                }
+            }
+            printf("INFO: pid=%d unsupported on this engine (row=%d, slot=%d)\n", pid, (int)currentEngineRow, slot);
+            return;
+    }
+
+    // Log to file for review
+    FILE* successLog = fopen("parameter_debug.log", "a");
+    if (successLog) {
+        fprintf(successLog, "SUCCESS: row=%d slot=%d pid=%d route=%s value=%.3f engine_type=%s\n",
+                (int)currentEngineRow, slot, pid, routeTag(route), currentValue,
+                ether_get_engine_type_name(ether_get_instrument_engine_type(etherEngine, slot)));
+        fclose(successLog);
+    }
 }
 
 void drawFixedUI() {
@@ -632,7 +770,7 @@ void drawFixedUI() {
     printf("\x1b[2J\x1b[H");
     rebuildVisibleParams();
     // Use friendly display name
-    const char* techName = ether_get_engine_type_name(currentEngineRow);
+    const char* techName = currentInstrumentTypeName();
     const char* name = getDisplayName(techName);
     const char* cat = nullptr;
     float cpu = ether_get_cpu_usage(etherEngine);
@@ -679,7 +817,7 @@ void drawFixedUI() {
     // Show FM algo if applicable (uses TIMBRE as algo selector 0..7)
     int algo = (int)std::floor(engineParameters[currentEngineRow][static_cast<int>(ParameterID::TIMBRE)] * 8.0f);
     if (algo < 0) algo = 0; if (algo > 7) algo = 7;
-    bool isFM = (ether_get_engine_type_name(currentEngineRow) && std::string(ether_get_engine_type_name(currentEngineRow)).find("FM") != std::string::npos);
+    bool isFM = (currentInstrumentTypeName() && std::string(currentInstrumentTypeName()).find("FM") != std::string::npos);
     if (isFM) {
         static const char* fmAlgoNames[8] = {
             "Stack 1-2-3-4", "Stack 1-2-2-3", "Bright 1-3-2-5", "Mellow 1-1.5-2-3",
@@ -777,37 +915,39 @@ void drawFixedUI() {
 
     // Parameter table (no scroll) - now includes pseudo-parameters
     printf("Params (↑/↓ select, ←/→ adjust, space play/stop, w write, c clear, q quit)\n");
+    printf("[E]=Engine  [FX]=Post  [—]=Unsupported\n");
     int slot = rowToSlot[currentEngineRow]; if (slot < 0) slot = 0;
     for (size_t i = 0; i < extendedVisibleParams.size(); ++i) {
         int paramId = extendedVisibleParams[i];
-        float v = getExtendedParameterValue(paramId, slot);
+        float v = getParamNormForDisplay(currentEngineRow, paramId);
+        ParamRoute r = resolveParamRoute(currentEngineRow, paramId);
         const char* sel = (selectedParamIndex == (int)i) ? ">" : " ";
         std::string label = parameterNames[paramId];
 
         // Special formatting for pseudo-parameters
         if (paramId == PSEUDO_PARAM_OCTAVE) {
-            printf("%s %-12s : %+d\n", sel, label.c_str(), octaveOffset.load());
+            printf("%s %-4s %-12s : %+d\n", sel, "[—]", label.c_str(), octaveOffset.load());
         } else if (paramId == PSEUDO_PARAM_PITCH) {
-            printf("%s %-12s : %+.1f st\n", sel, label.c_str(), pitchOffset.load());
+            printf("%s %-4s %-12s : %+.1f st\n", sel, "[—]", label.c_str(), pitchOffset.load());
         } else {
             // Rename LPF cutoff to "brightness" for Classic 4-Op FM
-            bool isFM4Op = (ether_get_engine_type_name(currentEngineRow) && std::string(ether_get_engine_type_name(currentEngineRow)).find("Classic4OpFM") != std::string::npos);
+            bool isFM4Op = (currentInstrumentTypeName() && std::string(currentInstrumentTypeName()).find("Classic4OpFM") != std::string::npos);
             if (isFM4Op && paramId == static_cast<int>(ParameterID::FILTER_CUTOFF)) label = "brightness";
-            printf("%s %-12s : %0.2f\n", sel, label.c_str(), v);
+            printf("%s %-4s %-12s : %0.2f\n", sel, routeTag(r), label.c_str(), v);
         }
     }
     // Extra: Voices control + FX controls
     int baseIdx = (int)extendedVisibleParams.size();
     int voices = ether_get_engine_voice_count(etherEngine, 0);
     const char* selv = (selectedParamIndex == baseIdx) ? ">" : " ";
-    printf("%s %-12s : %d\n", selv, "voices", voices);
+    printf("%s %-4s %-12s : %d\n", selv, "[E]", "voices", voices);
     // Per-engine FX sends
     float sRev = ether_get_engine_fx_send(etherEngine, currentEngineRow, 0);
     float sDel = ether_get_engine_fx_send(etherEngine, currentEngineRow, 1);
     const char* sels1 = (selectedParamIndex == baseIdx+1) ? ">" : " ";
     const char* sels2 = (selectedParamIndex == baseIdx+2) ? ">" : " ";
-    printf("%s %-12s : %0.2f\n", sels1, "rev_send", sRev);
-    printf("%s %-12s : %0.2f\n", sels2, "del_send", sDel);
+    printf("%s %-4s %-12s : %0.2f\n", sels1, "[E]", "rev_send", sRev);
+    printf("%s %-4s %-12s : %0.2f\n", sels2, "[E]", "del_send", sDel);
     // Global FX
     float rvTime = ether_get_fx_global(etherEngine, 0, 0);
     float rvDamp = ether_get_fx_global(etherEngine, 0, 1);
@@ -821,12 +961,12 @@ void drawFixedUI() {
     const char* selg3 = (selectedParamIndex == baseIdx+6) ? ">" : " ";
     const char* selg4 = (selectedParamIndex == baseIdx+7) ? ">" : " ";
     const char* selg5 = (selectedParamIndex == baseIdx+8) ? ">" : " ";
-    printf("%s %-12s : %0.2f\n", selg0, "rvb_size", rvTime);
-    printf("%s %-12s : %0.2f\n", selg1, "rvb_damp", rvDamp);
-    printf("%s %-12s : %0.2f\n", selg2, "rvb_mix",  rvMix);
-    printf("%s %-12s : %0.2f\n", selg3, "dly_time", dlTime);
-    printf("%s %-12s : %0.2f\n", selg4, "dly_fb",   dlFB);
-    printf("%s %-12s : %0.2f\n", selg5, "dly_mix",  dlMix);
+    printf("%s %-4s %-12s : %0.2f\n", selg0, "[FX]", "rvb_size", rvTime);
+    printf("%s %-4s %-12s : %0.2f\n", selg1, "[FX]", "rvb_damp", rvDamp);
+    printf("%s %-4s %-12s : %0.2f\n", selg2, "[FX]", "rvb_mix",  rvMix);
+    printf("%s %-4s %-12s : %0.2f\n", selg3, "[FX]", "dly_time", dlTime);
+    printf("%s %-4s %-12s : %0.2f\n", selg4, "[FX]", "dly_fb",   dlFB);
+    printf("%s %-4s %-12s : %0.2f\n", selg5, "[FX]", "dly_mix",  dlMix);
     // LFO quick status
     printf("LFO sel: %2d  wf=%2d  rate=%4.2fHz  depth=%4.2f  ([/]=select  v=wave  r/R=rate  d/D=depth  L=assign menu  S=settings)\n",
            selectedLFOIndex+1, lfoWaveform[selectedLFOIndex], lfoRate[selectedLFOIndex], lfoDepth[selectedLFOIndex]);
@@ -892,7 +1032,7 @@ void drawFixedUI() {
 }
 
 bool isCurrentEngineDrum() {
-    const char* name = ether_get_engine_type_name(currentEngineRow);
+    const char* name = currentInstrumentTypeName();
     if (!name) return false;
     std::string n(name);
     for (auto &c : n) c = std::tolower(c);
@@ -900,7 +1040,10 @@ bool isCurrentEngineDrum() {
 }
 
 bool isEngineDrum(int row) {
-    const char* name = ether_get_engine_type_name(row);
+    int slot = rowToSlot[row];
+    if (slot < 0) slot = 0;
+    int t = ether_get_instrument_engine_type(etherEngine, slot);
+    const char* name = ether_get_engine_type_name(t);
     if (!name) return false;
     std::string n(name);
     for (auto &c : n) c = std::tolower(c);
@@ -1178,11 +1321,6 @@ int grid_key_handler(const char *path, const char *types, lo_arg **argv, int arg
                 } else if (x == 4) {
                     // PLAY/PAUSE button - remapped from (0,0) to (4,0)
                     reqTogglePlay = true;
-                } else if (x == 7) {
-                    // COPY button - single press = copy mode, long press = clone pattern
-                    copyPressTime = std::chrono::steady_clock::now();
-                    copyMode = true;
-                    std::cout << "📋 COPY mode ON - press step to copy, hold for pattern clone" << std::endl;
                 }
             } else if (state == 0) {
                 if (x == 0) {
@@ -1212,19 +1350,6 @@ int grid_key_handler(const char *path, const char *types, lo_arg **argv, int arg
                     performanceFX.clearAllEffects();
                     std::cout << "🎵 Performance FX Mode DEACTIVATED" << std::endl;
                 } else if (x == 4) muteHold = false;    // release mute view
-                else if (x == 7) {
-                    // COPY button release - check for long press (pattern clone)
-                    auto now = std::chrono::steady_clock::now();
-                    auto holdDuration = std::chrono::duration_cast<std::chrono::milliseconds>(now - copyPressTime).count();
-
-                    if (holdDuration > 500) {  // Long press = clone pattern
-                        cloneCurrentPattern();
-                    } else {
-                        // Short press = toggle copy mode
-                        copyMode = !copyMode.load();
-                        std::cout << (copyMode ? "📋 COPY mode ON" : "📋 COPY mode OFF") << std::endl;
-                    }
-                }
             }
             return 0;
         }
@@ -1251,6 +1376,27 @@ int grid_key_handler(const char *path, const char *types, lo_arg **argv, int arg
                 muteHold = true;
             } else if (state == 0) {
                 muteHold = false;
+            }
+            return 0;
+        }
+
+        // COPY button: x=4,y=2 - row 3, column 5
+        if (x == 4 && y == 2) {
+            if (state == 1) { // press
+                // COPY button - just record press time, toggle happens on release
+                copyPressTime = std::chrono::steady_clock::now();
+            } else if (state == 0) { // release
+                // COPY button release - check for long press (pattern clone)
+                auto now = std::chrono::steady_clock::now();
+                auto holdDuration = std::chrono::duration_cast<std::chrono::milliseconds>(now - copyPressTime).count();
+
+                if (holdDuration > 500) {  // Long press = clone pattern
+                    cloneCurrentPattern();
+                } else {
+                    // Short press = toggle copy mode
+                    copyMode = !copyMode.load();
+                    std::cout << (copyMode ? "📋 COPY mode ON" : "📋 COPY mode OFF") << std::endl;
+                }
             }
             return 0;
         }
@@ -1594,11 +1740,12 @@ int grid_key_handler(const char *path, const char *types, lo_arg **argv, int arg
                 if (state == 1) {
                     int newEngine = std::min(MAX_ENGINES - 1, padIdx);
                     currentEngineRow = newEngine;
+                    int slot = rowToSlot[newEngine]; if (slot < 0) slot = 0;
                     if (etherEngine) {
-                        int slot = rowToSlot[newEngine]; if (slot < 0) slot = 0;
                         ether_set_active_instrument(etherEngine, slot);
                     }
-                    const char* techName = ether_get_engine_type_name(newEngine);
+                    int t = ether_get_instrument_engine_type(etherEngine, slot);
+                    const char* techName = ether_get_engine_type_name(t);
                     const char* name = getDisplayName(techName);
                     std::cout << "Engine -> " << newEngine << ": " << (name ? name : "Unknown") << std::endl;
                 }
@@ -1874,8 +2021,8 @@ void updateGridLEDs() {
     lo_send(grid_addr, (grid_prefix + "/grid/led/level/set").c_str(), "iii", 3, 0, 4);
     // PLAY/PAUSE button at (4,0) - remapped from (0,0)
     lo_send(grid_addr, (grid_prefix + "/grid/led/level/set").c_str(), "iii", 4, 0, playing ? 15 : 4);
-    // COPY button at (7,0) - short press = copy mode, long press = clone pattern
-    lo_send(grid_addr, (grid_prefix + "/grid/led/level/set").c_str(), "iii", 7, 0, copyMode ? 15 : 4);
+    // COPY button at (4,2) - row 3, column 5 - short press = copy mode, long press = clone pattern
+    lo_send(grid_addr, (grid_prefix + "/grid/led/level/set").c_str(), "iii", 4, 2, copyMode ? 15 : 4);
     // DELETE button at (4,3) - button above Write
     lo_send(grid_addr, (grid_prefix + "/grid/led/level/set").c_str(), "iii", 4, 3, deleteMode ? 15 : 4);
     // WRITE button at (4,4) - remapped from (1,0)
@@ -2883,7 +3030,7 @@ public:
         std::cout << "\n=== EtherSynth Grid Sequencer ===" << std::endl;
         std::cout << "Grid: " << (gridConnected ? "Connected" : "Disconnected") << std::endl;
         
-        const char* engineName = ether_get_engine_type_name(currentEngineRow);
+        const char* engineName = currentInstrumentTypeName();
         std::cout << "Current Engine Row: " << currentEngineRow << " (" << (engineName ? engineName : "Unknown") << ")" << std::endl;
         std::cout << "BPM: " << std::fixed << std::setprecision(1) << bpm.load();
         std::cout << " | " << (playing ? "PLAYING" : "STOPPED");
@@ -3250,7 +3397,7 @@ public:
                 step.active = false;
             }
         }
-        const char* name = ether_get_engine_type_name(currentEngineRow);
+        const char* name = currentInstrumentTypeName();
         std::cout << "✓ Cleared pattern for " << (name ? name : "Unknown") << std::endl;
     }
     
@@ -3376,13 +3523,13 @@ void GridSequencer::processPseudoParamLFOs() {
             // LFO modulates octave in range -2 to +2 octaves
             int baseOctave = octaveOffset.load();
             int modulatedOctave = baseOctave + static_cast<int>(lfoModulation * 2.0f);
-            modulatedOctave = std::clamp(modulatedOctave, -4, 4);
+            modulatedOctave = clamp(modulatedOctave, -4, 4);
             // Note: This is real-time modulation - doesn't change the base octaveOffset
         } else if (paramId == PSEUDO_PARAM_PITCH) {
             // LFO modulates pitch in range -6 to +6 semitones
             float basePitch = pitchOffset.load();
             float modulatedPitch = basePitch + (lfoModulation * 6.0f);
-            modulatedPitch = std::clamp(modulatedPitch, -12.0f, 12.0f);
+            modulatedPitch = clamp(modulatedPitch, -12.0f, 12.0f);
             // Note: This is real-time modulation - doesn't change the base pitchOffset
         }
 
@@ -3644,7 +3791,7 @@ void bakePerformanceFXIntoPattern(PerformanceFX effect) {
 void GridSequencer::showStatus() {
     std::cout << "\n=== EtherSynth Grid Sequencer ===" << std::endl;
     std::cout << "Grid: " << (gridConnected ? "Connected" : "Disconnected") << std::endl;
-    const char* techName = ether_get_engine_type_name(currentEngineRow);
+    const char* techName = currentInstrumentTypeName();
     const char* engineName = getDisplayName(techName);
     std::cout << "Current Engine Row: " << currentEngineRow << " (" << (engineName ? engineName : "Unknown") << ")" << std::endl;
     std::cout << "BPM: " << std::fixed << std::setprecision(1) << bpm.load();
@@ -4125,7 +4272,7 @@ void GridSequencer::stop() {
 }
 
 void GridSequencer::clearPattern() {
-    if (isCurrentEngineDrum()) { for (auto &m : drumMasks) m = 0; } else { for (auto& step : enginePatterns[currentEngineRow]) step.active = false; } const char* techName = ether_get_engine_type_name(currentEngineRow); const char* name = getDisplayName(techName); std::cout << "✓ Cleared pattern for " << (name ? name : "Unknown") << std::endl;
+    if (isCurrentEngineDrum()) { for (auto &m : drumMasks) m = 0; } else { for (auto& step : enginePatterns[currentEngineRow]) step.active = false; } const char* techName = currentInstrumentTypeName(); const char* name = getDisplayName(techName); std::cout << "✓ Cleared pattern for " << (name ? name : "Unknown") << std::endl;
 }
 
 void GridSequencer::shutdownSequencer() {
@@ -4182,7 +4329,7 @@ void GridSequencer::updateEngineFromEncoderChange(const std::string& param_id, f
 
     // Get current value, add delta, and clamp
     float current_value = engineParameters[engine_num][static_cast<int>(pid)];
-    float new_value = std::clamp(current_value + delta, 0.0f, 1.0f);
+    float new_value = clamp(current_value + delta, 0.0f, 1.0f);
 
     // Update both our local copy and the engine
     engineParameters[engine_num][static_cast<int>(pid)] = new_value;
@@ -4243,10 +4390,10 @@ void GridSequencer::adjustLatchedParameter(int enc_index, int delta) {
     int pid = getExtendedParameterId(encoderLatches[enc_index].paramIndex);
 
     if (pid == PSEUDO_PARAM_OCTAVE) {
-        octaveOffset = std::clamp(octaveOffset.load() + delta, -4, 4);
+        octaveOffset = clamp(octaveOffset.load() + delta, -4, 4);
         std::cout << "🎛️ Octave: " << (octaveOffset.load() > 0 ? "+" : "") << octaveOffset.load() << std::endl;
     } else if (pid == PSEUDO_PARAM_PITCH) {
-        pitchOffset = std::clamp(pitchOffset.load() + (delta * 0.1f), -12.0f, 12.0f);
+        pitchOffset = clamp(pitchOffset.load() + (delta * 0.1f), -12.0f, 12.0f);
         std::cout << "🎛️ Pitch: " << (pitchOffset.load() > 0 ? "+" : "") << std::fixed << std::setprecision(1) << pitchOffset.load() << " st" << std::endl;
     } else if (pid != -1) {
         int slot = rowToSlot[currentEngineRow];
@@ -4323,7 +4470,7 @@ void GridSequencer::handleEncoder4Turn(int delta) {
     if (patternHold.load()) {
         // PATTERN + Encoder 4: Pattern bank pagination
         int oldBank = currentPatternBank.load();
-        currentPatternBank = std::clamp(currentPatternBank.load() + delta, 0, 3);
+        currentPatternBank = clamp(currentPatternBank.load() + delta, 0, 3);
 
         if (currentPatternBank.load() != oldBank) {
             // Pattern bank updated - status shown in terminal GUI
@@ -4340,17 +4487,17 @@ void GridSequencer::handleEncoder4Turn(int delta) {
             if (pid != -1) {
                 // Handle pseudo-parameters
                 if (pid == PSEUDO_PARAM_OCTAVE) {
-                    octaveOffset = std::clamp(octaveOffset.load() + delta, -4, 4);
+                    octaveOffset = clamp(octaveOffset.load() + delta, -4, 4);
                     std::cout << "Encoder adjusted octave to: " << octaveOffset.load() << std::endl;
                     return;
                 } else if (pid == PSEUDO_PARAM_PITCH) {
-                    pitchOffset = std::clamp(pitchOffset.load() + (delta * 0.1f), -12.0f, 12.0f);
+                    pitchOffset = clamp(pitchOffset.load() + (delta * 0.1f), -12.0f, 12.0f);
                     std::cout << "Encoder adjusted pitch to: " << pitchOffset.load() << std::endl;
                     return;
                 }
 
                 float current_value = engineParameters[currentEngineRow][pid];
-                float new_value = std::clamp(current_value + (delta * 0.01f), 0.0f, 1.0f);
+                float new_value = clamp(current_value + (delta * 0.01f), 0.0f, 1.0f);
                 engineParameters[currentEngineRow][pid] = new_value;
                 int slot = rowToSlot[currentEngineRow];
                 if (slot < 0) slot = 0;
@@ -4383,15 +4530,15 @@ void GridSequencer::handleParameterEncoderTurn(int encoder_id, int delta) {
 
         // Handle pseudo-parameters specially
         if (static_cast<int>(pid) == PSEUDO_PARAM_OCTAVE) {
-            octaveOffset = std::clamp(octaveOffset.load() + delta, -4, 4);
+            octaveOffset = clamp(octaveOffset.load() + delta, -4, 4);
             std::cout << ">>> LATCHED PSEUDO-PARAM: octave = " << octaveOffset.load() << std::endl;
         } else if (static_cast<int>(pid) == PSEUDO_PARAM_PITCH) {
-            pitchOffset = std::clamp(pitchOffset.load() + (delta * 0.1f), -12.0f, 12.0f);
+            pitchOffset = clamp(pitchOffset.load() + (delta * 0.1f), -12.0f, 12.0f);
             std::cout << ">>> LATCHED PSEUDO-PARAM: pitch = " << pitchOffset.load() << std::endl;
         } else {
             // Handle real parameters
             float current_value = engineParameters[latchedEngineRow][static_cast<int>(pid)];
-            float new_value = std::clamp(current_value + (delta * 0.01f), 0.0f, 1.0f);
+            float new_value = clamp(current_value + (delta * 0.01f), 0.0f, 1.0f);
             engineParameters[latchedEngineRow][static_cast<int>(pid)] = new_value;
 
             int slot = rowToSlot[latchedEngineRow];
