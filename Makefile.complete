@@ -1,0 +1,75 @@
+# Makefile for complete EtherSynth with ALL compiled engines
+CXX = g++
+CXXFLAGS = -std=c++17 -O2 -I. -I/opt/homebrew/include
+LDFLAGS = -L/opt/homebrew/lib -lportaudio
+
+# Compile all working engines
+compile_all_engines:
+	@echo "Compiling ALL working synthesis engines..."
+	
+	# Core engines that we know work
+	$(CXX) $(CXXFLAGS) -c src/engines/MacroVAEngine.cpp -o MacroVAEngine.o
+	$(CXX) $(CXXFLAGS) -c src/engines/MacroFMEngine.cpp -o MacroFMEngine.o
+	$(CXX) $(CXXFLAGS) -c src/engines/NoiseEngine.cpp -o NoiseEngine.o
+	$(CXX) $(CXXFLAGS) -c src/engines/FormantEngine.cpp -o FormantEngine.o
+	
+	# Additional engines that compiled successfully
+	$(CXX) $(CXXFLAGS) -c src/engines/MacroWaveshaperEngine.cpp -o MacroWaveshaperEngine.o
+	$(CXX) $(CXXFLAGS) -c src/engines/MacroWavetableEngine.cpp -o MacroWavetableEngine.o
+	$(CXX) $(CXXFLAGS) -c src/engines/MacroChordEngine.cpp -o MacroChordEngine.o
+	$(CXX) $(CXXFLAGS) -c src/engines/MacroHarmonicsEngine.cpp -o MacroHarmonicsEngine.o
+	$(CXX) $(CXXFLAGS) -c src/engines/TidesOscEngine.cpp -o TidesOscEngine.o
+	$(CXX) $(CXXFLAGS) -c src/engines/RingsVoiceEngine.cpp -o RingsVoiceEngine.o
+	$(CXX) $(CXXFLAGS) -c src/engines/ElementsVoiceEngine.cpp -o ElementsVoiceEngine.o
+	
+	@echo "✅ ALL working engines compiled!"
+
+# Compile core dependencies
+compile_core_deps:
+	@echo "Compiling core dependencies..."
+	$(CXX) $(CXXFLAGS) -c src/core/ErrorHandler.cpp -o ErrorHandler.o
+	$(CXX) $(CXXFLAGS) -c src/core/ErrorReporter.cpp -o ErrorReporter.o
+	$(CXX) $(CXXFLAGS) -c src/synthesis/DSPUtils.cpp -o DSPUtils.o
+	$(CXX) $(CXXFLAGS) -c src/synthesis/SynthEngine.cpp -o SynthEngine.o
+	$(CXX) $(CXXFLAGS) -c src/synthesis/SubtractiveEngine.cpp -o SubtractiveEngine.o
+	$(CXX) $(CXXFLAGS) -c src/synthesis/WavetableEngine.cpp -o WavetableEngine.o
+	$(CXX) $(CXXFLAGS) -c src/synthesis/FMEngine.cpp -o FMEngine.o
+	$(CXX) $(CXXFLAGS) -c src/synthesis/GranularEngine.cpp -o GranularEngine.o
+
+# Build the complete real engine terminal with ALL engines
+complete_real_terminal: compile_core_deps compile_all_engines
+	@echo "Building COMPLETE real engine terminal with ALL compiled engines..."
+	$(CXX) $(CXXFLAGS) -o test_complete_real_engines \
+		real_engine_terminal.cpp \
+		complete_real_bridge.cpp \
+		MacroVAEngine.o \
+		MacroFMEngine.o \
+		MacroWaveshaperEngine.o \
+		MacroWavetableEngine.o \
+		MacroChordEngine.o \
+		MacroHarmonicsEngine.o \
+		FormantEngine.o \
+		NoiseEngine.o \
+		TidesOscEngine.o \
+		RingsVoiceEngine.o \
+		ElementsVoiceEngine.o \
+		ErrorHandler.o \
+		ErrorReporter.o \
+		DSPUtils.o \
+		SynthEngine.o \
+		SubtractiveEngine.o \
+		WavetableEngine.o \
+		FMEngine.o \
+		GranularEngine.o \
+		$(LDFLAGS)
+	@echo "🎉 COMPLETE real engine terminal built with ALL 11 synthesis engines!"
+
+# Test all engines in sequence
+test_all_engines: complete_real_terminal
+	@echo "Testing ALL real engines..."
+	@echo "engine 0\nnote 60\nengine 1\nnote 64\nengine 2\nnote 67\nengine 3\nnote 72\nengine 4\nnote 76\nengine 5\nnote 79\nengine 6\nnote 60\nengine 7\nnote 64\nengine 8\nnote 67\nengine 9\nnote 72\nengine 10\nnote 76\nquit" | ./test_complete_real_engines
+
+clean:
+	rm -f *.o src/*/*.o test_complete_real_engines
+
+.PHONY: compile_all_engines compile_core_deps complete_real_terminal test_all_engines clean

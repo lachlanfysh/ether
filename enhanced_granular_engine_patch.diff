@@ -1,0 +1,113 @@
+--- a/src/engines/GranularEngine.h
++++ b/src/engines/GranularEngine.h
+@@ -1,57 +1,84 @@
+ #pragma once
+ #include "../synthesis/SynthEngine.h"
+ #include <vector>
+ #include <random>
++#include <array>
++#include <cmath>
+ 
+ class GranularEngine : public SynthEngine {
+ public:
+     GranularEngine();
+     ~GranularEngine() override = default;
+ 
+     // SynthEngine interface
+-    EngineType getType() const override { return EngineType::COUNT; /* placeholder if not wired */ }
+-    const char* getName() const override { return "Granular"; }
+-    const char* getDescription() const override { return "Simple grain cloud"; }
++    EngineType getType() const override { return EngineType::GRANULAR; }
++    const char* getName() const override { return "Granular"; }
++    const char* getDescription() const override { return "Granular synthesis with texture control"; }
+ 
+     void noteOn(uint8_t note, float velocity, float aftertouch = 0.0f) override;
+     void noteOff(uint8_t note) override;
+     void setAftertouch(uint8_t note, float aftertouch) override {}
+     void allNotesOff() override { active_ = false; }
+ 
+     void setParameter(ParameterID param, float value) override;
+     float getParameter(ParameterID param) const override;
+     bool hasParameter(ParameterID) const override { return true; }
+ 
+     void processAudio(EtherAudioBuffer& outputBuffer) override;
+ 
+     size_t getActiveVoiceCount() const override { return active_ ? 1 : 0; }
+     size_t getMaxVoiceCount() const override { return 1; }
+     void setVoiceCount(size_t) override {}
+ 
+-    float getCPUUsage() const override { return 0.0f; }
++    float getCPUUsage() const override { return 0.05f; }
+ 
+     void savePreset(uint8_t*, size_t, size_t&) const override {}
+     bool loadPreset(const uint8_t*, size_t) override { return true; }
+ 
+-    void setSampleRate(float sr) override { sampleRate_ = sr; }
++    void setSampleRate(float sr) override { sampleRate_ = sr; initializeBuffers(); }
+     void setBufferSize(size_t bs) override { bufferSize_ = bs; }
+ 
+ private:
+-    // Parameters (0..1)
+-    float position_ = 0.0f;   // Not used (placeholder)
+-    float size_ = 0.2f;       // seconds mapped later
+-    float density_ = 0.5f;    // grains per second scaler
+-    float jitter_ = 0.2f;     // randomness
+-    float texture_ = 0.5f;    // window hardness
+-    float pitch_ = 0.5f;      // -12..+12 semitones
+-    float spread_ = 0.5f;     // stereo
++    // Core parameter mapping (0..1 normalized)
++    float position_ = 0.0f;   // Buffer position (0..1)
++    float size_ = 0.3f;       // 10..200ms (logarithmic)
++    float density_ = 0.3f;    // 5..50 grains/sec
++    float jitter_ = 0.0f;     // Timing ±20%, pitch ±0.5 semitones
++    float texture_ = 0.0f;    // Hann↔Tukey window blend
++    float pitch_ = 0.5f;      // -12..+12 semitones
++    float spread_ = 0.0f;     // Equal-power pan modulation
+     float volume_ = 0.5f;
+     bool active_ = false;
++    
++    // Internal state
++    float sampleRate_ = 48000.0f;
++    size_t bufferSize_ = 256;
++    float baseFreq_ = 220.0f;
++    
++    // Grain scheduling
++    float grainTimer_ = 0.0f;
++    float nextGrainTime_ = 0.0f;
++    
++    // Grain structure
++    struct Grain {
++        bool active = false;
++        float phase = 0.0f;
++        float phaseInc = 0.0f;
++        float bufferPos = 0.0f;
++        float duration = 0.0f;
++        float age = 0.0f;
++        float panL = 1.0f, panR = 1.0f;
++        float amplitude = 0.0f;
++    };
++    
++    static constexpr int MAX_GRAINS = 16;
++    std::array<Grain, MAX_GRAINS> grains_;
++    int activeGrains_ = 0;
++    
++    // Internal sound buffer (sine/noise hybrid)
++    static constexpr size_t BUFFER_SIZE = 2048;
++    std::array<float, BUFFER_SIZE> internalBuffer_;
+ 
+     std::mt19937 rng_;
+-    std::uniform_real_distribution<float> uni_{0.0f,1.0f};
++    std::uniform_real_distribution<float> uniform_{-1.0f, 1.0f};
++    
++    // Internal methods
++    void initializeBuffers();
++    void scheduleGrain();
++    void processGrains(EtherAudioBuffer& output);
++    float getWindow(float phase, float texture) const;
++    float getSample(float position) const;
++    std::pair<float, float> getPanGains(float spread) const;
+ 
+-    float phase_ = 0.0f;
+ };
+-
+-

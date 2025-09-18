@@ -1,0 +1,8 @@
+Define the final core 16-parameter layout shared across engines:
+- Core synth: HARMONICS, TIMBRE, MORPH
+- Envelope: ATTACK, DECAY, SUSTAIN, RELEASE
+- Tone/Mix: FILTER_CUTOFF, FILTER_RESONANCE, HPF, VOLUME, PAN, AMPLITUDE, CLIP
+- Performance: ACCENT_AMOUNT, GLIDE_TIME
+
+Include ranges and scales (log/exp/lin) and the fallback post-chain mapping so every parameter audibly does something even if an engine lacks native support (HPF tilt, LPF cutoff/Q, pre-gain, soft-clip, pan). Keep concise and implementable.
+

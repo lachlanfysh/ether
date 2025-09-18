@@ -22,58 +22,17 @@
 #include <errno.h>
 #include <chrono>
 // #include "encoder_control_system.h" // Removed - using simple direct approach
+// Light refactor scaffolding (thin facades; no behavior change yet)
+#include "light_refactor/EngineBridge.h"
+#include "light_refactor/GridLEDManager.h"
+#include "light_refactor/ParameterCache.h"
+#include "src/io/SerialPort.h"
+#include "src/io/EncoderIO.h"
+#include "src/grid/GridRenderer.h"
+#include "src/pattern/PatternSystem.h"
+#include "src/params/ParamUtils.h"
 
-// Serial communication for encoder controller
-class SerialPort {
-private:
-    int fd;
-public:
-    SerialPort() : fd(-1) {}
-
-    bool open(const std::string& device) {
-        fd = ::open(device.c_str(), O_RDWR | O_NOCTTY | O_NONBLOCK);
-        if (fd == -1) return false;
-
-        struct termios tty;
-        if (tcgetattr(fd, &tty) != 0) return false;
-
-        cfsetospeed(&tty, B115200);
-        cfsetispeed(&tty, B115200);
-        tty.c_cflag &= ~PARENB;
-        tty.c_cflag &= ~CSTOPB;
-        tty.c_cflag &= ~CSIZE;
-        tty.c_cflag |= CS8;
-        tty.c_cflag &= ~CRTSCTS;
-        tty.c_cflag |= CREAD | CLOCAL;
-        tty.c_lflag &= ~ICANON;
-        tty.c_lflag &= ~ECHO;
-        tty.c_lflag &= ~ECHOE;
-        tty.c_lflag &= ~ECHONL;
-        tty.c_lflag &= ~ISIG;
-        tty.c_iflag &= ~(IXON | IXOFF | IXANY);
-        tty.c_iflag &= ~(IGNBRK|BRKINT|PARMRK|ISTRIP|INLCR|IGNCR|ICRNL);
-        tty.c_oflag &= ~OPOST;
-        tty.c_oflag &= ~ONLCR;
-        tty.c_cc[VTIME] = 1;
-        tty.c_cc[VMIN] = 0;
-
-        return tcsetattr(fd, TCSANOW, &tty) == 0;
-    }
-
-    int readData(char* buffer, int maxBytes) {
-        if (fd == -1) return -1;
-        return read(fd, buffer, maxBytes);
-    }
-
-    void close() {
-        if (fd != -1) {
-            ::close(fd);
-            fd = -1;
-        }
-    }
-
-    ~SerialPort() { close(); }
-};
+// Serial communication moved to src/io/SerialPort.{h,cpp}
 
 // Forward decls
 bool isCurrentEngineDrum();
@@ -178,14 +137,7 @@ std::array<std::atomic<int>,MAX_ENGINES> melodicPreviewStep; // per engine: last
 std::array<std::atomic<bool>,16> padIsDown; // true while key is held
 
 // Step data per engine
-struct StepData {
-    bool active = false;
-    int note = 60;
-    float velocity = 0.6f;
-    bool hasAccent = false;      // Accent mode flag
-    bool hasRetrigger = false;   // Retrigger mode flag
-    bool hasArpeggiator = false; // Arpeggiator mode flag
-};
+#include "src/sequencer/StepData.h"
 
 std::array<std::vector<StepData>, MAX_ENGINES> enginePatterns;
 std::array<std::map<int, float>, MAX_ENGINES> engineParameters;
@@ -201,6 +153,8 @@ const std::vector<int> minorScale = {
 };
 
 // Grid OSC variables
+static light::GridLEDManager<16,8> g_leds;
+static light::ParameterCache g_params;
 lo_server_thread grid_server = nullptr;
 lo_address grid_addr = nullptr;
 std::atomic<int> currentEngineRow{0}; // Which engine we're editing/playing (0..MAX_ENGINES-1)
@@ -524,6 +478,8 @@ void applyParamToEngine(int engine, ParameterID pid, float value) {
         if (slot < 0) slot = 0;
         ether_set_active_instrument(etherEngine, slot);
         ether_set_instrument_parameter(etherEngine, slot, static_cast<int>(pid), value);
+        g_params.set(slot, static_cast<int>(pid), value);
+        g_params.set(slot, static_cast<int>(pid), value);
     }
 }
 
@@ -536,7 +492,11 @@ float getExtendedParameterValue(int paramId, int slot) {
         // Convert pitch offset (-12.0 to +12.0) to normalized 0-1 range
         return (pitchOffset.load() + 12.0f) / 24.0f;
     } else {
-        return ether_get_instrument_parameter(etherEngine, slot, paramId);
+        float v;
+        if (g_params.get(slot, paramId, v)) return v;
+        v = ether_get_instrument_parameter(etherEngine, slot, paramId);
+        g_params.set(slot, paramId, v);
+        return v;
     }
 }
 
@@ -552,6 +512,7 @@ void setExtendedParameterValue(int paramId, int slot, float value) {
         pitchOffset = std::max(-12.0f, std::min(12.0f, pitchOffset.load()));
     } else {
         ether_set_instrument_parameter(etherEngine, slot, paramId, value);
+        g_params.set(slot, paramId, value);
     }
 }
 
@@ -567,80 +528,11 @@ int getExtendedParameterId(int index) {
 static inline float clamp01(float v) { return v < 0.0f ? 0.0f : (v > 1.0f ? 1.0f : v); }
 
 // --- Param routing: Engine vs PostFX vs Unsupported ---
-enum class ParamRoute : uint8_t { Engine, PostFX, Unsupported };
-
-// Enable global filter FX for consistent LPF/HPF/RES/AMP/CLIP across all engines
 #define ETHER_HAVE_GLOBAL_FILTER_FX
-
-// Optional: if your backend exposes a global filter FX, define this macro at build time
-// and provide the global FX API below. If not defined, only [E] or [—] will appear.
 #if defined(ETHER_HAVE_GLOBAL_FILTER_FX)
-extern "C" {
-float ether_get_fx_global(void* synth, int which, int param);
-void  ether_set_fx_global(void* synth, int which, int param, float value);
-}
+extern "C" { float ether_get_fx_global(void* synth, int which, int param); void  ether_set_fx_global(void* synth, int which, int param, float value); }
 #endif
-
-static inline ParamRoute resolveParamRoute(int row, int pid) {
-    int slot = rowToSlot[row]; if (slot < 0) slot = 0;
-
-    // Force filter and dynamics parameters to PostFX for consistency across all engines
-    if (pid == static_cast<int>(ParameterID::FILTER_CUTOFF) ||
-        pid == static_cast<int>(ParameterID::FILTER_RESONANCE) ||
-        pid == static_cast<int>(ParameterID::HPF) ||
-        pid == static_cast<int>(ParameterID::AMPLITUDE) ||
-        pid == static_cast<int>(ParameterID::CLIP)) {
-        return ParamRoute::PostFX;
-    }
-
-    // Other parameters: prefer per-engine param if supported
-    if (ether_engine_has_parameter(etherEngine, slot, pid))
-        return ParamRoute::Engine;
-
-    return ParamRoute::Unsupported;
-}
-
-static inline const char* routeTag(ParamRoute r) {
-    switch (r) {
-        case ParamRoute::Engine:  return "[E]";
-        case ParamRoute::PostFX:  return "[FX]";
-        default:                  return "[—]";
-    }
-}
-
-static float getParamNormForDisplay(int row, int pid) {
-    // Always read from local cache for consistent behavior
-    return engineParameters[row][pid];
-}
-
-// Debug probe functions
-static const char* pidName(int pid) {
-    switch ((ParameterID)pid) {
-        case ParameterID::FILTER_CUTOFF:    return "LPF";
-        case ParameterID::FILTER_RESONANCE: return "RES";
-        case ParameterID::HPF:              return "HPF";
-        case ParameterID::AMPLITUDE:        return "AMP";
-        case ParameterID::CLIP:             return "CLIP";
-        default:                            return "OTHER";
-    }
-}
-
-static void debugPrintParamSupportAllRows() {
-    printf("\n=== Engine Param Support (LPF/RES/HPF/AMP/CLIP) ===\n");
-    for (int row = 0; row < 16; ++row) {
-        int slot = rowToSlot[row]; if (slot < 0) slot = 0;
-        int t = ether_get_instrument_engine_type(etherEngine, slot);
-        const char* name = ether_get_engine_type_name(t);
-        int pids[] = {(int)ParameterID::FILTER_CUTOFF,(int)ParameterID::FILTER_RESONANCE,(int)ParameterID::HPF,(int)ParameterID::AMPLITUDE,(int)ParameterID::CLIP};
-        printf("Row %02d  %-12s  ", row, name ? name : "Unknown");
-        for (int pid : pids) {
-            ParamRoute r = resolveParamRoute(row, pid);
-            printf("%s=%s  ", pidName(pid), routeTag(r));
-        }
-        printf("\n");
-    }
-    printf("=== end ===\n");
-}
+#include "src/params/ParamRouting.h"
 
 // Clean, centralized parameter adjustment function
 void adjustParameter(int pid, bool increment) {
@@ -725,6 +617,7 @@ void adjustParameter(int pid, bool increment) {
         case ParamRoute::Engine:
             // Write cached value to engine (cache-first pattern)
             ether_set_instrument_parameter(etherEngine, slot, pid, currentValue);
+            g_params.set(slot, pid, currentValue);
             break;
 
         case ParamRoute::PostFX:
@@ -1161,91 +1054,39 @@ void initializeEnginePatterns() {
 }
 
 // Convert bank + slot to absolute pattern index
-int getAbsolutePatternIndex(int bank, int slot) {
-    return bank * 16 + slot;
-}
+int getAbsolutePatternIndex(int bank, int slot) { return pattern::absoluteIndex(bank, slot); }
 
 // Get current absolute pattern index
-int getCurrentAbsolutePatternIndex() {
-    return getAbsolutePatternIndex(currentPatternBank.load(), currentPatternSlot.load());
-}
+int getCurrentAbsolutePatternIndex() { return pattern::currentAbsoluteIndex(currentPatternBank, currentPatternSlot); }
 
 // Initialize pattern bank with empty patterns
-void initializePatternBank() {
-    for (int pattern = 0; pattern < 64; pattern++) {
-        for (int engine = 0; engine < MAX_ENGINES; engine++) {
-            patternBank[pattern][engine].resize(16);
-            for (int step = 0; step < 16; step++) {
-                patternBank[pattern][engine][step].active = false;
-                patternBank[pattern][engine][step].note = 60;
-                patternBank[pattern][engine][step].velocity = 0.6f;
-            }
-        }
-    }
-}
+void initializePatternBank() { pattern::initializeBank<MAX_ENGINES>(patternBank); }
 
 // Save current pattern to pattern bank
 void saveCurrentPatternToBank(int patternSlot) {
-    int absoluteIndex = getAbsolutePatternIndex(currentPatternBank.load(), patternSlot);
-    if (absoluteIndex < 0 || absoluteIndex >= 64) return;
-
-    for (int engine = 0; engine < MAX_ENGINES; engine++) {
-        patternBank[absoluteIndex][engine] = enginePatterns[engine];
-    }
-    std::cout << "🔒 Saved current pattern to Bank " << (currentPatternBank.load() + 1) << ", Slot " << (patternSlot + 1) << " (Pattern " << (absoluteIndex + 1) << ")" << std::endl;
+    pattern::saveToBank<MAX_ENGINES>(enginePatterns, patternBank, currentPatternBank, patternSlot);
+    int abs = getAbsolutePatternIndex(currentPatternBank.load(), patternSlot);
+    std::cout << "🔒 Saved current pattern to Bank " << (currentPatternBank.load() + 1) << ", Slot " << (patternSlot + 1) << " (Pattern " << (abs + 1) << ")" << std::endl;
 }
 
 // Load pattern from bank to current pattern
 void loadPatternFromBank(int patternSlot) {
-    int absoluteIndex = getAbsolutePatternIndex(currentPatternBank.load(), patternSlot);
-    if (absoluteIndex < 0 || absoluteIndex >= 64) return;
-
-    for (int engine = 0; engine < MAX_ENGINES; engine++) {
-        enginePatterns[engine] = patternBank[absoluteIndex][engine];
-    }
-    currentPatternSlot = patternSlot;
-    std::cout << "📂 Loaded pattern " << (absoluteIndex + 1) << " (Bank " << (currentPatternBank.load() + 1) << ", Slot " << (patternSlot + 1) << ")" << std::endl;
+    pattern::loadFromBank<MAX_ENGINES>(enginePatterns, patternBank, currentPatternBank, currentPatternSlot, patternSlot);
+    int abs = getAbsolutePatternIndex(currentPatternBank.load(), patternSlot);
+    std::cout << "📂 Loaded pattern " << (abs + 1) << " (Bank " << (currentPatternBank.load() + 1) << ", Slot " << (patternSlot + 1) << ")" << std::endl;
 }
 
 // Clone current pattern to next available slot
 void cloneCurrentPattern() {
-    // Find next available pattern slot in current bank
     int targetSlot = -1;
-    for (int i = 0; i < 16; i++) {
-        if (i != currentPatternSlot.load()) {
-            int absoluteIndex = getAbsolutePatternIndex(currentPatternBank.load(), i);
-            // Check if pattern slot is empty (all steps inactive)
-            bool isEmpty = true;
-            for (int engine = 0; engine < MAX_ENGINES && isEmpty; engine++) {
-                for (size_t step = 0; step < patternBank[absoluteIndex][engine].size() && isEmpty; step++) {
-                    if (patternBank[absoluteIndex][engine][step].active) {
-                        isEmpty = false;
-                    }
-                }
-            }
-            if (isEmpty) {
-                targetSlot = i;
-                break;
-            }
-        }
-    }
-
-    if (targetSlot == -1) {
+    saveCurrentPatternToBank(currentPatternSlot.load());
+    if (!pattern::cloneCurrent<MAX_ENGINES>(enginePatterns, patternBank, currentPatternBank, currentPatternSlot.load(), targetSlot)) {
         std::cout << "❌ No available pattern slots for cloning in current bank" << std::endl;
         return;
     }
-
-    // Save current pattern first
-    saveCurrentPatternToBank(currentPatternSlot.load());
-
-    // Clone current pattern to target slot
-    int targetAbsoluteIndex = getAbsolutePatternIndex(currentPatternBank.load(), targetSlot);
-    for (int engine = 0; engine < MAX_ENGINES; engine++) {
-        patternBank[targetAbsoluteIndex][engine] = enginePatterns[engine];
-    }
-
-    int sourceAbsolute = getCurrentAbsolutePatternIndex();
-    std::cout << "📋 Cloned pattern " << (sourceAbsolute + 1) << " to pattern " << (targetAbsoluteIndex + 1) << " (Bank " << (currentPatternBank.load() + 1) << ", Slot " << (targetSlot + 1) << ")" << std::endl;
+    int src = getCurrentAbsolutePatternIndex();
+    int dst = getAbsolutePatternIndex(currentPatternBank.load(), targetSlot);
+    std::cout << "📋 Cloned pattern " << (src + 1) << " to pattern " << (dst + 1) << " (Bank " << (currentPatternBank.load() + 1) << ", Slot " << (targetSlot + 1) << ")" << std::endl;
 }
 
 // OSC handlers
@@ -1254,6 +1095,12 @@ int grid_key_handler(const char *path, const char *types, lo_arg **argv, int arg
     if (firstMessage) {
         std::cout << "Grid: Received first OSC message from grid device: " << path << std::endl;
         firstMessage = false;
+    }
+    // Minimal debug probe: log first few presses
+    static int dbgCount = 0;
+    if (dbgCount < 3 && argc >= 3) {
+        std::cout << "Grid key evt: x=" << argv[0]->i << " y=" << argv[1]->i << " state=" << argv[2]->i << std::endl;
+        dbgCount++;
     }
 
     // Layout: top row y=0 function keys; 4x4 pad at x=0..3, y=1..4
@@ -1925,181 +1772,50 @@ int serialosc_device_handler(const char *path, const char *types, lo_arg **argv,
 
 void updateGridLEDs() {
     if (!gridConnected || !grid_addr) return;
+    g_leds.clear();
 
-    // Clear all LEDs first
-    lo_send(grid_addr, (grid_prefix + "/grid/led/all").c_str(), "i", 0);
+    // Function row indicators and mute/solo indicator
+    // MUTE/SOLO indicator: (4,1)
+    g_leds.set(4, 1, (uint8_t)(muteHold ? 15 : 4));
+    // SHIFT (0,0), ENGINE (1,0), PATTERN (2,0), CLEAR (3,0), PLAY/PAUSE (4,0)
+    g_leds.set(0, 0, (uint8_t)(shiftHeld ? 15 : 4));
+    g_leds.set(1, 0, (uint8_t)(engineHold ? 15 : 4));
+    int patternButtonBrightness = patternHold.load() ? (((int)(time(nullptr) * 4) % 2) ? 15 : 8) : 4;
+    g_leds.set(2, 0, (uint8_t)patternButtonBrightness);
+    g_leds.set(3, 0, 4);
+    g_leds.set(4, 0, (uint8_t)(playing ? 15 : 4));
+    // COPY (4,2), DELETE (4,3), WRITE (4,4)
+    g_leds.set(4, 2, (uint8_t)(copyMode ? 15 : 4));
+    g_leds.set(4, 3, (uint8_t)(deleteMode ? 15 : 4));
+    g_leds.set(4, 4, (uint8_t)(writeMode ? 15 : 4));
 
-    static const int PAD_ORIGIN_X = 0;
-    static const int PAD_ORIGIN_Y = 1;
-    static const int PAD_W = 4;
-    static const int PAD_H = 4;
+    // 4x4 panel rendering via renderer
+    std::array<bool, MAX_ENGINES> rowMutedArr{};
+    for (int i = 0; i < MAX_ENGINES; ++i) rowMutedArr[i] = rowMuted[i];
 
-    // Pattern hold view: show 4x4 pattern slots
-    if (patternHold.load()) {
-        for (int i = 0; i < PAD_W * PAD_H; i++) {
-            int x = PAD_ORIGIN_X + (i % PAD_W);
-            int y = PAD_ORIGIN_Y + (i / PAD_W);
-            int brightness = 0;
+    grid::renderGrid<MAX_ENGINES>(
+        g_leds,
+        patternHold.load(),
+        chainingMode.load(),
+        currentPatternBank.load(),
+        currentPatternSlot.load(),
+        patternChain,
+        muteHold,
+        soloEngine,
+        rowMutedArr.data(),
+        engineHold.load(),
+        writeMode.load(),
+        currentEngineRow.load(),
+        isCurrentEngineDrum(),
+        selectedDrumPad,
+        drumMasks,
+        enginePatterns,
+        currentStep.load(),
+        playing.load()
+    );
 
-            if (chainingMode.load()) {
-                // Chaining mode: show patterns in chain as bright, current pattern as medium, others dim
-                int absolutePattern = getAbsolutePatternIndex(currentPatternBank.load(), i);
-                bool inChain = false;
-                for (int chainPattern : patternChain) {
-                    if (chainPattern == absolutePattern) {
-                        inChain = true;
-                        break;
-                    }
-                }
-
-                if (inChain) {
-                    brightness = 15;  // Patterns in chain bright
-                } else if (i == currentPatternSlot.load()) {
-                    brightness = 8;   // Current pattern medium
-                } else {
-                    brightness = 2;   // Available pattern slots very dim
-                }
-            } else {
-                // Normal pattern selection mode
-                if (i == currentPatternSlot.load()) {
-                    brightness = 15;  // Current pattern bright
-                } else {
-                    brightness = 4;   // Available pattern slots dim
-                }
-            }
-
-            if (brightness > 0) {
-                lo_send(grid_addr, (grid_prefix + "/grid/led/level/set").c_str(), "iii", x, y, brightness);
-            }
-        }
-
-        // PATTERN button indicator - blink when in chaining mode
-        int patternButtonBrightness = chainingMode.load() ? (((int)(time(nullptr) * 4) % 2) ? 15 : 8) : 15;
-        lo_send(grid_addr, (grid_prefix + "/grid/led/level/set").c_str(), "iii", 2, 0, patternButtonBrightness);
-        return;
-    }
-
-    // Mute hold view: show 4x4 engine mute states
-    if (muteHold) {
-        for (int i = 0; i < PAD_W * PAD_H; i++) {
-            int x = PAD_ORIGIN_X + (i % PAD_W);
-            int y = PAD_ORIGIN_Y + (i / PAD_W);
-            int brightness = 0;
-            int eng = i;
-            if (eng < MAX_ENGINES) {
-                if (soloEngine >= 0) {
-                    brightness = (eng == soloEngine) ? 15 : 2;
-                } else {
-                    brightness = rowMuted[eng] ? 2 : 12;
-                }
-            }
-            if (brightness > 0) {
-                lo_send(grid_addr, (grid_prefix + "/grid/led/level/set").c_str(), "iii", x, y, brightness);
-            }
-        }
-        // Function row indicators
-        lo_send(grid_addr, (grid_prefix + "/grid/led/level/set").c_str(), "iii", 4, 0, 15);
-        return;
-    }
-
-
-    // MUTE/SOLO button indicator: x=4,y=1 - remapped from original (4,0)
-    {
-        int mx = 4, my = 1;
-        int b = muteHold ? 15 : 4;
-        lo_send(grid_addr, (grid_prefix + "/grid/led/level/set").c_str(), "iii", mx, my, b);
-    }
-
-    // Function row indicators
-    // SHIFT button at (0,0) - advanced grid controller
-    lo_send(grid_addr, (grid_prefix + "/grid/led/level/set").c_str(), "iii", 0, 0, shiftHeld ? 15 : 4);
-    // ENGINE select at (1,0) - moved from (2,0) per grid spec
-    lo_send(grid_addr, (grid_prefix + "/grid/led/level/set").c_str(), "iii", 1, 0, engineHold ? 15 : 4);
-    // PATTERN select at (2,0) - placeholder for future implementation
-    lo_send(grid_addr, (grid_prefix + "/grid/led/level/set").c_str(), "iii", 2, 0, 4);
-    // Clear at (3,0)
-    lo_send(grid_addr, (grid_prefix + "/grid/led/level/set").c_str(), "iii", 3, 0, 4);
-    // PLAY/PAUSE button at (4,0) - remapped from (0,0)
-    lo_send(grid_addr, (grid_prefix + "/grid/led/level/set").c_str(), "iii", 4, 0, playing ? 15 : 4);
-    // COPY button at (4,2) - row 3, column 5 - short press = copy mode, long press = clone pattern
-    lo_send(grid_addr, (grid_prefix + "/grid/led/level/set").c_str(), "iii", 4, 2, copyMode ? 15 : 4);
-    // DELETE button at (4,3) - button above Write
-    lo_send(grid_addr, (grid_prefix + "/grid/led/level/set").c_str(), "iii", 4, 3, deleteMode ? 15 : 4);
-    // WRITE button at (4,4) - remapped from (1,0)
-    lo_send(grid_addr, (grid_prefix + "/grid/led/level/set").c_str(), "iii", 4, 4, writeMode ? 15 : 4);
-
-    // 4x4 panel
-    if (engineHold) {
-        // Show engine selection across 4x4
-        for (int i = 0; i < PAD_W * PAD_H; i++) {
-            int x = PAD_ORIGIN_X + (i % PAD_W);
-            int y = PAD_ORIGIN_Y + (i / PAD_W);
-            int b = (i == currentEngineRow) ? 15 : 4;
-            lo_send(grid_addr, (grid_prefix + "/grid/led/level/set").c_str(), "iii", x, y, b);
-        }
-        return;
-    }
-
-    if (writeMode) {
-        int engine = currentEngineRow;
-        for (int i = 0; i < PAD_W * PAD_H; i++) {
-            int x = PAD_ORIGIN_X + (i % PAD_W);
-            int y = PAD_ORIGIN_Y + (i / PAD_W);
-            int b = 0;
-            if (isCurrentEngineDrum()) {
-                // In write mode, show selected drum's 16-step pattern across time
-                bool on = (drumMasks[selectedDrumPad] >> i) & 1u;
-                b = on ? 12 : ((playing && i == currentStep) ? 2 : 0);
-            } else {
-                // Ghost steps from other engines dim
-                bool ghost = false;
-                for (int e = 0; e < MAX_ENGINES; ++e) {
-                    if (e == engine) continue;
-                    if (enginePatterns[e][i].active) { ghost = true; break; }
-                }
-                if (ghost) b = 3; // dim ghost
-                // Current engine step brighter
-                if (enginePatterns[engine][i].active) {
-                    b = (playing && i == currentStep) ? 15 : 8;
-                } else if (playing && i == currentStep) {
-                    b = std::max(b, 2); // ensure playhead visible
-                }
-            }
-            if (b > 0) {
-                lo_send(grid_addr, (grid_prefix + "/grid/led/level/set").c_str(), "iii", x, y, b);
-            }
-        }
-        return;
-    }
-
-    // Notes mode: show current engine pattern brightly, others as ghost; playhead dimly
-    for (int i = 0; i < PAD_W * PAD_H; i++) {
-        int x = PAD_ORIGIN_X + (i % PAD_W);
-        int y = PAD_ORIGIN_Y + (i / PAD_W);
-        int b = 0;
-        if (isCurrentEngineDrum()) {
-            // Bright for steps written to selected drum pad
-            bool on = ((drumMasks[selectedDrumPad] >> i) & 1u) != 0;
-            if (on) b = 12;
-        } else {
-            // Bright for current engine's own steps
-            if (enginePatterns[currentEngineRow][i].active) {
-                b = 12;
-            } else {
-                // Dim ghost if any other engine has a step here
-                bool ghost = false;
-                for (int e = 0; e < MAX_ENGINES; ++e) {
-                    if (e == currentEngineRow) continue;
-                    if (enginePatterns[e][i].active) { ghost = true; break; }
-                }
-                if (ghost) b = 3;
-            }
-        }
-        if (playing && i == currentStep) b = std::max(b, 2);
-        if (b > 0) {
-            lo_send(grid_addr, (grid_prefix + "/grid/led/level/set").c_str(), "iii", x, y, b);
-        }
-    }
+    // Flush once
+    g_leds.flush([&](int x,int y,int b){ lo_send(grid_addr, (grid_prefix + "/grid/led/level/set").c_str(), "iii", x, y, b); });
 }
 
 // Global function to get next step with Performance FX applied (supports stacking)
@@ -2712,8 +2428,8 @@ int audioCallback(const void* /*inputBuffer*/, void* outputBuffer,
                     // Apply 303-style accent effect
                     if (enginePatterns[engine][step].hasAccent) {
                         // Save current filter settings
-                        float currentCutoff = ether_get_instrument_parameter(etherEngine, slot, static_cast<int>(ParameterID::FILTER_CUTOFF));
-                        float currentResonance = ether_get_instrument_parameter(etherEngine, slot, static_cast<int>(ParameterID::FILTER_RESONANCE));
+                        float currentCutoff = getExtendedParameterValue(static_cast<int>(ParameterID::FILTER_CUTOFF), slot);
+                        float currentResonance = getExtendedParameterValue(static_cast<int>(ParameterID::FILTER_RESONANCE), slot);
 
                         // Apply accent boost to filter (opens cutoff significantly + adds resonance)
                         float accentCutoff = std::min(1.0f, currentCutoff + 0.3f);  // Boost cutoff
@@ -2721,6 +2437,8 @@ int audioCallback(const void* /*inputBuffer*/, void* outputBuffer,
 
                         ether_set_instrument_parameter(etherEngine, slot, static_cast<int>(ParameterID::FILTER_CUTOFF), accentCutoff);
                         ether_set_instrument_parameter(etherEngine, slot, static_cast<int>(ParameterID::FILTER_RESONANCE), accentResonance);
+                        g_params.set(slot, static_cast<int>(ParameterID::FILTER_CUTOFF), accentCutoff);
+                        g_params.set(slot, static_cast<int>(ParameterID::FILTER_RESONANCE), accentResonance);
 
                         // Slight volume boost too
                         velocity = std::min(1.0f, velocity * 1.2f);
@@ -2953,7 +2671,7 @@ private:
 
     // Encoder state - implementing your control architecture
     SerialPort encoderSerial;
-    std::string serialLineBuffer;
+    EncoderIO encoderIO{encoderSerial};
 
     // Encoder 4 state (menu navigation + edit mode)
     bool editMode = false;
@@ -3470,11 +3188,13 @@ bool GridSequencer::initializeGrid() {
 }
 
 bool GridSequencer::initialize() {
-    etherEngine = ether_create();
+    etherEngine = light::EngineBridge::create();
     if (!etherEngine) return false;
-    ether_initialize(etherEngine);
+    light::EngineBridge::initialize(etherEngine);
     ether_set_master_volume(etherEngine, 0.8f);
-    ether_play(etherEngine);
+    // Warm cache for commonly displayed params for slot 0
+    g_params.reserve(128);
+    light::EngineBridge::play(etherEngine);
     for (int r = 0; r < MAX_ENGINES; ++r) rowToSlot[r] = -1;
     for (int s = 0; s < 8; ++s) slotToRow[s] = -1;
     for (int r = 0; r < MAX_ENGINES; ++r) rowToSlot[r] = -1;
@@ -3482,7 +3202,15 @@ bool GridSequencer::initialize() {
     for (int r = 0; r < 16 && r < MAX_ENGINES; ++r) { rowToSlot[r] = r; slotToRow[r] = r; ether_set_active_instrument(etherEngine, r); ether_set_instrument_engine_type(etherEngine, r, r); }
     int curSlot = (currentEngineRow >= 0 && currentEngineRow < MAX_ENGINES) ? rowToSlot[currentEngineRow] : 0;
     if (curSlot < 0) curSlot = 0; ether_set_active_instrument(etherEngine, curSlot);
-    for (int engine = 0; engine < MAX_ENGINES; engine++) { int slot = rowToSlot[engine]; if (slot < 0) continue; ether_set_instrument_engine_type(etherEngine, slot, engine); for (auto& kv : engineParameters[engine]) { ether_set_instrument_parameter(etherEngine, slot, kv.first, kv.second); } }
+    for (int engine = 0; engine < MAX_ENGINES; engine++) {
+        int slot = rowToSlot[engine];
+        if (slot < 0) continue;
+        ether_set_instrument_engine_type(etherEngine, slot, engine);
+        for (auto& kv : engineParameters[engine]) {
+            ether_set_instrument_parameter(etherEngine, slot, kv.first, kv.second);
+            g_params.set(slot, kv.first, kv.second);
+        }
+    }
     rebuildVisibleParams(); // Initialize parameter list after engines are set up
     PaError err = Pa_Initialize(); if (err != paNoError) return false;
     err = Pa_OpenDefaultStream(&stream, 0, 2, paFloat32, 48000, 128, audioCallback, nullptr); if (err != paNoError) return false;
@@ -4276,25 +4004,31 @@ void GridSequencer::clearPattern() {
 }
 
 void GridSequencer::shutdownSequencer() {
-    if (running) { stop(); running = false; if (sequencerThread.joinable()) sequencerThread.join(); if (ledUpdateThread.joinable()) ledUpdateThread.join(); if (grid_server) { lo_server_thread_stop(grid_server); lo_server_thread_free(grid_server); grid_server = nullptr; } if (grid_addr) { lo_address_free(grid_addr); grid_addr = nullptr; } if (stream) { Pa_CloseStream(stream); stream = nullptr; } Pa_Terminate(); if (etherEngine) { ether_shutdown(etherEngine); ether_destroy(etherEngine); etherEngine = nullptr; } audioRunning = false; }
+    if (running) { stop(); running = false; if (sequencerThread.joinable()) sequencerThread.join(); if (ledUpdateThread.joinable()) ledUpdateThread.join(); if (grid_server) { lo_server_thread_stop(grid_server); lo_server_thread_free(grid_server); grid_server = nullptr; } if (grid_addr) { lo_address_free(grid_addr); grid_addr = nullptr; } if (stream) { Pa_CloseStream(stream); stream = nullptr; } Pa_Terminate(); if (etherEngine) { light::EngineBridge::shutdown(etherEngine); light::EngineBridge::destroy(etherEngine); etherEngine = nullptr; } audioRunning = false; }
 }
 
 /* END_OLD_INCLASS */
 
 // Encoder control system implementation
 void GridSequencer::setupEncoderSystem() {
-    // Simple encoder setup - just connect to serial like encoder_demo
+    // Simple encoder setup via EncoderIO
     std::cout << "Waiting for encoder controller..." << std::endl;
     sleep(2);  // Give QTPY time to boot and run script
-
     std::vector<std::string> devices = {"/dev/tty.usbmodem101", "/dev/tty.usbmodemm59111127381"};
-    for (const auto& device : devices) {
-        std::cout << "Trying to connect to: " << device << std::endl;
-        if (encoderSerial.open(device)) {
-            std::cout << "📡 Connected to encoder controller: " << device << std::endl;
-            break;
-        }
+    if (encoderIO.connect(devices)) {
+        std::cout << "📡 Connected to encoder controller" << std::endl;
+    } else {
+        std::cout << "⚠️  Could not connect to encoder controller. Check device connection." << std::endl;
     }
+    EncoderIO::Callbacks cbs;
+    cbs.onTurn = [this](int encoder_id, int delta){
+        if (encoder_id == 4) handleEncoder4Turn(delta);
+        else handleParameterEncoderTurn(encoder_id, delta);
+    };
+    cbs.onButton = [this](int encoder_id, bool pressed){
+        if (pressed) handleEncoderButtonPress(encoder_id);
+    };
+    encoderIO.setCallbacks(std::move(cbs));
 }
 
 void GridSequencer::updateEngineFromEncoderChange(const std::string& param_id, float delta) {
@@ -4334,26 +4068,10 @@ void GridSequencer::updateEngineFromEncoderChange(const std::string& param_id, f
     // Update both our local copy and the engine
     engineParameters[engine_num][static_cast<int>(pid)] = new_value;
     ether_set_instrument_parameter(etherEngine, slot, static_cast<int>(pid), new_value);
+    g_params.set(slot, static_cast<int>(pid), new_value);
 }
 
-std::string getParameterName(ParameterID pid) {
-    switch (pid) {
-        case ParameterID::HARMONICS: return "harmonics";
-        case ParameterID::TIMBRE: return "timbre";
-        case ParameterID::MORPH: return "morph";
-        case ParameterID::ATTACK: return "attack";
-        case ParameterID::DECAY: return "decay";
-        case ParameterID::SUSTAIN: return "sustain";
-        case ParameterID::RELEASE: return "release";
-        case ParameterID::FILTER_CUTOFF: return "lpf";
-        case ParameterID::FILTER_RESONANCE: return "resonance";
-        case ParameterID::HPF: return "hpf";
-        case ParameterID::VOLUME: return "volume";
-        case ParameterID::PAN: return "pan";
-        case ParameterID::REVERB_MIX: return "reverb";
-        default: return "unknown";
-    }
-}
+// Parameter name mapping provided by param_utils::getParameterName
 
 void GridSequencer::syncMenuWithEncoder(const std::string& param_id) {
     // Instead of using encoder's own menu system, directly control the grid sequencer's selectedParamIndex
@@ -4400,7 +4118,7 @@ void GridSequencer::adjustLatchedParameter(int enc_index, int delta) {
         if (slot < 0) slot = 0;
 
         // Get current parameter value
-        float currentValue = ether_get_instrument_parameter(etherEngine, slot, pid);
+        float currentValue = getExtendedParameterValue(pid, slot);
 
         // Adjust by small increments (0.01 per encoder step)
         float newValue = currentValue + (delta * 0.01f);
@@ -4408,60 +4126,13 @@ void GridSequencer::adjustLatchedParameter(int enc_index, int delta) {
 
         // Set the new value
         ether_set_instrument_parameter(etherEngine, slot, pid, newValue);
+        g_params.set(slot, pid, newValue);
         std::cout << "🎛️ " << encoderLatches[enc_index].paramName << ": " << std::fixed << std::setprecision(2) << newValue << std::endl;
     }
 }
 
 void GridSequencer::processEncoderInput() {
-    // Read serial data - replicate encoder_demo approach exactly
-    char buffer[256];
-    int bytesRead = encoderSerial.readData(buffer, sizeof(buffer) - 1);
-    if (bytesRead > 0) {
-        buffer[bytesRead] = '\0';
-        serialLineBuffer += buffer;
-
-        // Process complete lines
-        size_t pos;
-        while ((pos = serialLineBuffer.find('\n')) != std::string::npos) {
-            std::string line = serialLineBuffer.substr(0, pos);
-            serialLineBuffer = serialLineBuffer.substr(pos + 1);
-
-            if (!line.empty() && line.back() == '\r') {
-                line.pop_back();
-            }
-
-            // Parse encoder commands - direct approach like encoder_demo
-            if (!line.empty() && line[0] == 'E') {
-                // Format: E1:+1 or E2:-1
-                if (line.size() >= 4 && line[2] == ':') {
-                    int encoder_id = line[1] - '0';
-                    int delta = std::stoi(line.substr(3));
-                    std::cout << "🎛️ Encoder " << encoder_id << " turned " << delta << std::endl;
-
-                    // Handle encoder directly like encoder_demo
-                    if (encoder_id == 4) {
-                        // Encoder 4: Menu navigation
-                        handleEncoder4Turn(delta);
-                    } else {
-                        // Encoders 1-3: Parameter control (for now, adjust current param)
-                        handleParameterEncoderTurn(encoder_id, delta);
-                    }
-                }
-            } else if (!line.empty() && line[0] == 'B') {
-                // Format: B1:PRESS or B1:RELEASE
-                if (line.size() >= 4 && line[2] == ':') {
-                    int encoder_id = line[1] - '0';
-                    std::string action = line.substr(3);
-                    if (action == "PRESS") {
-                        std::cout << "🔘 Button " << encoder_id << " PRESSED" << std::endl;
-                        handleEncoderButtonPress(encoder_id);
-                    } else if (action == "RELEASE") {
-                        std::cout << "🔘 Button " << encoder_id << " RELEASED" << std::endl;
-                    }
-                }
-            }
-        }
-    }
+    encoderIO.poll();
 }
 
 // Proper control architecture implementation
@@ -4629,7 +4300,7 @@ void GridSequencer::processPendingButtonPress(int encoder_id) {
                 }
             paramLatches[enc_index].active = true;
             paramLatches[enc_index].paramId = static_cast<ParameterID>(pid);
-            paramLatches[enc_index].paramName = getParameterName(static_cast<ParameterID>(pid));
+            paramLatches[enc_index].paramName = param_utils::getParameterName(static_cast<ParameterID>(pid));
             paramLatches[enc_index].engineRow = currentEngineRow;  // Store which engine this parameter belongs to
 
             std::cout << ">>> LATCH: Encoder " << encoder_id << " -> " << paramLatches[enc_index].paramName << " (Engine Row " << currentEngineRow << ")" << std::endl;

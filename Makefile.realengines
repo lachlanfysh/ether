@@ -1,0 +1,80 @@
+# Makefile for real EtherSynth engines compilation
+CXX = g++
+CXXFLAGS = -std=c++17 -O2 -I. -I/opt/homebrew/include
+LDFLAGS = -L/opt/homebrew/lib -lportaudio
+
+# Core source files needed for engines
+CORE_SOURCES = \
+	src/core/ErrorHandler.cpp \
+	src/synthesis/DSPUtils.cpp \
+	src/synthesis/SynthEngine.cpp
+
+# Engine source files
+ENGINE_SOURCES = \
+	src/engines/MacroVAEngine.cpp \
+	src/engines/MacroFMEngine.cpp \
+	src/engines/NoiseEngine.cpp \
+	src/engines/FormantEngine.cpp
+
+# Object files
+CORE_OBJECTS = $(CORE_SOURCES:.cpp=.o)
+ENGINE_OBJECTS = $(ENGINE_SOURCES:.cpp=.o)
+ALL_OBJECTS = $(CORE_OBJECTS) $(ENGINE_OBJECTS)
+
+# Test compilation of individual engines
+test_engines:
+	@echo "Testing compilation of individual engines..."
+	@echo "1. Testing MacroVAEngine..."
+	$(CXX) $(CXXFLAGS) -c src/engines/MacroVAEngine.cpp -o MacroVAEngine.o
+	@echo "✅ MacroVAEngine compiled successfully"
+	
+	@echo "2. Testing MacroFMEngine..."
+	$(CXX) $(CXXFLAGS) -c src/engines/MacroFMEngine.cpp -o MacroFMEngine.o || echo "❌ MacroFMEngine failed"
+	
+	@echo "3. Testing NoiseEngine..."
+	$(CXX) $(CXXFLAGS) -c src/engines/NoiseEngine.cpp -o NoiseEngine.o || echo "❌ NoiseEngine failed"
+	
+	@echo "4. Testing FormantEngine..."
+	$(CXX) $(CXXFLAGS) -c src/engines/FormantEngine.cpp -o FormantEngine.o || echo "❌ FormantEngine failed"
+
+# Test core dependencies
+test_core:
+	@echo "Testing core dependency compilation..."
+	$(CXX) $(CXXFLAGS) -c src/core/ErrorHandler.cpp -o ErrorHandler.o || echo "❌ ErrorHandler failed"
+	$(CXX) $(CXXFLAGS) -c src/synthesis/DSPUtils.cpp -o DSPUtils.o || echo "❌ DSPUtils failed"
+	$(CXX) $(CXXFLAGS) -c src/synthesis/SynthEngine.cpp -o SynthEngine.o || echo "❌ SynthEngine failed"
+
+# Build a real bridge that includes compiled engines
+real_bridge_with_engines: test_core test_engines compile_missing
+	@echo "Building REAL engine bridge with compiled engines..."
+	$(CXX) $(CXXFLAGS) -o test_real_engines \
+		real_engine_terminal.cpp \
+		working_real_bridge.cpp \
+		MacroVAEngine.o \
+		MacroFMEngine.o \
+		NoiseEngine.o \
+		FormantEngine.o \
+		ErrorHandler.o \
+		ErrorReporter.o \
+		DSPUtils.o \
+		SynthEngine.o \
+		SubtractiveEngine.o \
+		WavetableEngine.o \
+		FMEngine.o \
+		GranularEngine.o \
+		$(LDFLAGS)
+	@echo "✅ REAL engine terminal built with actual synthesis engines!"
+
+# Compile missing dependencies
+compile_missing:
+	@echo "Compiling missing dependencies..."
+	$(CXX) $(CXXFLAGS) -c src/core/ErrorReporter.cpp -o ErrorReporter.o
+	$(CXX) $(CXXFLAGS) -c src/synthesis/SubtractiveEngine.cpp -o SubtractiveEngine.o
+	$(CXX) $(CXXFLAGS) -c src/synthesis/WavetableEngine.cpp -o WavetableEngine.o
+	$(CXX) $(CXXFLAGS) -c src/synthesis/FMEngine.cpp -o FMEngine.o
+	$(CXX) $(CXXFLAGS) -c src/synthesis/GranularEngine.cpp -o GranularEngine.o
+
+clean:
+	rm -f *.o src/*/*.o test_real_engines
+
+.PHONY: test_engines test_core real_bridge_with_engines clean

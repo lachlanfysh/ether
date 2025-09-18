@@ -1,0 +1,52 @@
+# Core Parameter System Test Makefile
+CXX = g++
+CXXFLAGS = -std=c++17 -O2 -Wall -Wextra
+INCLUDES = -I. -Isrc -Isrc/core
+LIBS = -pthread
+
+# Core parameter test
+test_core_parameters: test_core_parameters.cpp src/core/CoreParameters.h src/core/PostChainProcessor.h
+	@echo "🔨 Compiling core parameter system test..."
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -o $@ test_core_parameters.cpp $(LIBS)
+	@echo "✅ Built: $@"
+
+# Run the test
+test-params: test_core_parameters
+	@echo "🧪 Testing core parameter system..."
+	./test_core_parameters
+	@echo "✅ Core parameter tests completed"
+
+# Build and test parameter system integration
+test-param-integration: test_core_parameters
+	@echo "🔗 Testing parameter system integration..."
+	@echo "Running parameter scaling tests..."
+	./test_core_parameters | grep -E "(✅|❌|Testing|Output)"
+	@echo "🎯 Integration test completed"
+
+# Clean test artifacts
+clean-params:
+	@echo "🧹 Cleaning parameter test artifacts..."
+	rm -f test_core_parameters
+	@echo "✅ Clean complete"
+
+# Help for parameter testing
+help-params:
+	@echo "📋 Core Parameter System Test Targets:"
+	@echo "=================================="
+	@echo "  test-params           - Build and run parameter system tests"
+	@echo "  test-param-integration - Run integration tests with output filtering"
+	@echo "  clean-params          - Clean test artifacts"
+	@echo "  help-params           - Show this help"
+	@echo ""
+	@echo "Test Coverage:"
+	@echo "  ✓ 16-parameter structure and defaults"
+	@echo "  ✓ Parameter scaling (linear/exponential/quadratic)"
+	@echo "  ✓ Post-chain fallback processing"  
+	@echo "  ✓ Parameter validation and bounds checking"
+	@echo "  ✓ Stereo processing and pan law"
+	@echo "  ✓ ADSR envelope integration"
+	@echo ""
+	@echo "Usage:"
+	@echo "  make -f Makefile.params test-params"
+
+.PHONY: test-params test-param-integration clean-params help-params

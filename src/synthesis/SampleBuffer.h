@@ -256,12 +256,14 @@ public:
     
     // Configuration
     void setMaxVoicesPerPad(int pad, int maxVoices);
-    void setVoicePriority(enum class Priority { LAST, OLDEST, HIGH_VEL } priority) { priority_ = priority; }
+    
+    enum class Priority { LAST, OLDEST, HIGH_VEL };
+    void setVoicePriority(Priority priority) { priority_ = priority; }
     
 private:
     Voice voices_[MAX_VOICES];
     int maxVoicesPerPad_[25];  // Max voices per pad (for 25 pads)
-    enum class Priority { LAST, OLDEST, HIGH_VEL } priority_;
+    Priority priority_;
     
     Voice* findOldestVoice();
     Voice* findLowestVelocityVoice();

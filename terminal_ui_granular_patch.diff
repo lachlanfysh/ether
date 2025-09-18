@@ -1,0 +1,160 @@
+--- a/grid_sequencer.cpp
++++ b/grid_sequencer.cpp
+@@ -174,7 +174,7 @@ float g_globalReverbDamping = 0.3f, g_globalDelayFeedback = 0.35f, g_globalDel
+ // Current param display range (0-indexed parameter IDs; we have ~23+ parameters after adding LFO etc.)
+ //  voices (1) + per-engine sends (2) + global reverb (3) + global delay (3) = 9
+-//  voices (1) + per-engine sends (2) + global reverb (3) + global delay (3) = 9
++//  voices (1) + per-engine sends (3) + global reverb (3) + global delay (3) + granular (6) = 16
+ const int START_VOICES_RANGE = 0;
+ const int START_SENDS_RANGE = 1;
+-const int END_SENDS_RANGE = 2;
++const int END_SENDS_RANGE = 3;  // Now includes Granular (3rd send)
+ const int START_REVERB_RANGE = 3;
+ const int END_REVERB_RANGE = 5;
+ const int START_DELAY_RANGE = 6;
+ const int END_DELAY_RANGE = 8;
++const int START_GRANULAR_RANGE = 9;
++const int END_GRANULAR_RANGE = 14;
+ 
+ std::atomic<int> currentParamIndex{START_SENDS_RANGE}; // Start with per-engine sends
+ std::atomic<bool> isInParameterEdit{false};
+@@ -308,15 +313,20 @@ void displayInstrumentInfo(bool useColor) {
+     printf("%s %-12s : %d\n", selVoices, "voices", vcount);
+     
+     // Per-engine FX sends
+     float sRev = ether_get_engine_fx_send(etherEngine, currentEngineRow, 0);
+     float sDel = ether_get_engine_fx_send(etherEngine, currentEngineRow, 1);
++    float sGrn = ether_get_engine_fx_send(etherEngine, currentEngineRow, 2);  // NEW: Granular send
+     
+     const char* sels1 = (currentParamIndex == 1 && isInParameterEdit) ? highlight : normal;
+     const char* sels2 = (currentParamIndex == 2 && isInParameterEdit) ? highlight : normal;
++    const char* sels3 = (currentParamIndex == 3 && isInParameterEdit) ? highlight : normal;
+     printf("%s %-12s : %0.2f\n", sels1, "rev_send", sRev);
+     printf("%s %-12s : %0.2f\n", sels2, "del_send", sDel);
++    printf("%s %-12s : %0.2f\n", sels3, "grn_send", sGrn);
+     
+     // Global Reverb
+-    const char* selRev1 = (currentParamIndex == 3 && isInParameterEdit) ? highlight : normal;
+-    const char* selRev2 = (currentParamIndex == 4 && isInParameterEdit) ? highlight : normal;
+-    const char* selRev3 = (currentParamIndex == 5 && isInParameterEdit) ? highlight : normal;
++    const char* selRev1 = (currentParamIndex == 4 && isInParameterEdit) ? highlight : normal;
++    const char* selRev2 = (currentParamIndex == 5 && isInParameterEdit) ? highlight : normal;
++    const char* selRev3 = (currentParamIndex == 6 && isInParameterEdit) ? highlight : normal;
+     printf("%s %-12s : %0.2f\n", selRev1, "global_rev_time", g_globalReverbTime);
+     printf("%s %-12s : %0.2f\n", selRev2, "global_rev_damp", g_globalReverbDamping);
+     printf("%s %-12s : %0.2f\n", selRev3, "global_rev_mix", (float)ether_get_fx_global(etherEngine, 0, 2));
+     
+     // Global Delay
+-    const char* selDly1 = (currentParamIndex == 6 && isInParameterEdit) ? highlight : normal;
+-    const char* selDly2 = (currentParamIndex == 7 && isInParameterEdit) ? highlight : normal;
+-    const char* selDly3 = (currentParamIndex == 8 && isInParameterEdit) ? highlight : normal;
++    const char* selDly1 = (currentParamIndex == 7 && isInParameterEdit) ? highlight : normal;
++    const char* selDly2 = (currentParamIndex == 8 && isInParameterEdit) ? highlight : normal;
++    const char* selDly3 = (currentParamIndex == 9 && isInParameterEdit) ? highlight : normal;
+     printf("%s %-12s : %0.2f\n", selDly1, "global_dly_time", g_globalDelayTimeMs / 1000.0f);
+     printf("%s %-12s : %0.2f\n", selDly2, "global_dly_fb", g_globalDelayFeedback);
+     printf("%s %-12s : %0.2f\n", selDly3, "global_dly_mix", (float)ether_get_fx_global(etherEngine, 1, 2));
++    
++    // Global Granular FX (minimal display)
++    const char* selGrn1 = (currentParamIndex == 10 && isInParameterEdit) ? highlight : normal;
++    const char* selGrn2 = (currentParamIndex == 11 && isInParameterEdit) ? highlight : normal;
++    const char* selGrn3 = (currentParamIndex == 12 && isInParameterEdit) ? highlight : normal;
++    const char* selGrn4 = (currentParamIndex == 13 && isInParameterEdit) ? highlight : normal;
++    const char* selGrn5 = (currentParamIndex == 14 && isInParameterEdit) ? highlight : normal;
++    printf("%s %-12s : %0.2f\n", selGrn1, "grn_size", getGranularParam(0));      // Size
++    printf("%s %-12s : %0.2f\n", selGrn2, "grn_density", getGranularParam(1));   // Density
++    printf("%s %-12s : %0.2f\n", selGrn3, "grn_position", getGranularParam(2));  // Position
++    printf("%s %-12s : %s\n", selGrn4, "grn_freeze", getGranularParam(8) > 0.5f ? "ON" : "OFF");  // Freeze
++    printf("%s %-12s : %0.2f\n", selGrn5, "grn_pitch", (getGranularParam(4) * 2.0f - 1.0f) * 24.0f);  // Pitch in semitones
++    
+     printf("%s", normal);
+ }
+ 
++// Helper functions for granular FX
++float granularParams[16] = {0.3f, 0.4f, 0.5f, 0.2f, 0.5f, 0.3f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.5f};
++
++float getGranularParam(int param) {
++    if (param >= 0 && param < 16) {
++        return granularParams[param];
++    }
++    return 0.0f;
++}
++
++void setGranularParam(int param, float value) {
++    if (param >= 0 && param < 16) {
++        granularParams[param] = std::clamp(value, 0.0f, 1.0f);
++        ether_set_granular_param(etherEngine, param, granularParams[param]);
++    }
++}
++
+ void adjustParameterValue(bool increase) {
+     if (!isInParameterEdit) return;
+     
+@@ -359,6 +395,11 @@ void adjustParameterValue(bool increase) {
+         ether_set_engine_fx_send(etherEngine, currentEngineRow, 1, newVal);
+         return;
++    } else if (currentParamIndex == 3) { // Granular send
++        float currentVal = ether_get_engine_fx_send(etherEngine, currentEngineRow, 2);
++        float newVal = std::clamp(currentVal + delta, 0.0f, 1.0f);
++        ether_set_engine_fx_send(etherEngine, currentEngineRow, 2, newVal);
++        return;
+     }
+     
+     // Global Reverb parameters
+-    if (currentParamIndex == 3) {
++    if (currentParamIndex == 4) {
+         g_globalReverbTime = std::clamp(g_globalReverbTime + delta, 0.0f, 1.0f);
+         ether_set_fx_global(etherEngine, 0, 0, g_globalReverbTime);
+         return;
+-    } else if (currentParamIndex == 4) {
++    } else if (currentParamIndex == 5) {
+         g_globalReverbDamping = std::clamp(g_globalReverbDamping + delta, 0.0f, 1.0f);
+         ether_set_fx_global(etherEngine, 0, 1, g_globalReverbDamping);
+         return;
+-    } else if (currentParamIndex == 5) {
++    } else if (currentParamIndex == 6) {
+         float currentMix = (float)ether_get_fx_global(etherEngine, 0, 2);
+         float newMix = std::clamp(currentMix + delta, 0.0f, 1.0f);
+         ether_set_fx_global(etherEngine, 0, 2, newMix);
+         return;
+     }
+     
+     // Global Delay parameters  
+-    if (currentParamIndex == 6) {
++    if (currentParamIndex == 7) {
+         g_globalDelayTimeMs = std::clamp(g_globalDelayTimeMs + delta * 1000.0f, 50.0f, 2000.0f);
+         ether_set_fx_global(etherEngine, 1, 0, g_globalDelayTimeMs / 1000.0f);
+         return;
+-    } else if (currentParamIndex == 7) {
++    } else if (currentParamIndex == 8) {
+         g_globalDelayFeedback = std::clamp(g_globalDelayFeedback + delta, 0.0f, 0.95f);
+         ether_set_fx_global(etherEngine, 1, 1, g_globalDelayFeedback);
+         return;
+-    } else if (currentParamIndex == 8) {
++    } else if (currentParamIndex == 9) {
+         float currentMix = (float)ether_get_fx_global(etherEngine, 1, 2);
+         float newMix = std::clamp(currentMix + delta, 0.0f, 1.0f);
+         ether_set_fx_global(etherEngine, 1, 2, newMix);
+         return;
++    }
++    
++    // Global Granular parameters
++    if (currentParamIndex >= 10 && currentParamIndex <= 14) {
++        int granParam = currentParamIndex - 10;  // Map to granular param indices
++        float currentVal = getGranularParam(granParam);
++        float newVal = std::clamp(currentVal + delta, 0.0f, 1.0f);
++        setGranularParam(granParam, newVal);
++        return;
+     }
+ }
+ 
+@@ -1008,8 +1065,8 @@ void handleKeyInput(char key) {
+         currentParamIndex = (currentParamIndex + 1) % 9;  // Wrap around available params
+-        currentParamIndex = (currentParamIndex + 1) % 9;  // Wrap around available params
++        currentParamIndex = (currentParamIndex + 1) % 15; // Updated range: voices + 3 sends + 3 reverb + 3 delay + 5 granular = 15
+     } else if (key == ',') {
+-        currentParamIndex = (currentParamIndex - 1 + 9) % 9;
++        currentParamIndex = (currentParamIndex - 1 + 15) % 15;
+     }
+     
+     // Numeric keys for direct instrument selection

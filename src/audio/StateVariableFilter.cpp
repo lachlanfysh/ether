@@ -1,4 +1,5 @@
 #include "StateVariableFilter.h"
+#include <algorithm>
 #include <cmath>
 
 #ifndef M_PI

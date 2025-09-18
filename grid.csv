@@ -1,0 +1,41 @@
+SHIFT,"ENGINE select (changes currently selected engine for current pattern, current assigned to button two to the right of this, no behaviour change)",PATTERN select (while holding user can choose using 4x4 from each pattern 1-16 slots (in future there will be chaining etc but not yet)),"FX select (punch in FX, not yet built)",Play / pause
+"4x4 note #1
+
+SHIFT BEHAVIOUR: assign LFO #1 to currently selected param","4x4 note #2
+
+SHIFT BEHAVIOUR: assign LFO #2 to currently selected param","4x4 note #3
+
+SHIFT BEHAVIOUR: assign LFO #3 to currently selected param","4x4 note #4
+
+SHIFT BEHAVIOUR: assign LFO #4 to currently selected param","Mute / solo: hold and press any of the 4x4 mutes the engine in that slot, double press solos current (per current behaviour, no change)"
+"4x4 note #5
+
+SHIFT BEHAVIOUR: assign LFO #5 to currently selected param","4x4 note #6
+
+SHIFT BEHAVIOUR: assign LFO #6 to currently selected param","4x4 note #7
+
+SHIFT BEHAVIOUR: assign LFO #7 to currently selected param","4x4 note #8
+
+SHIFT BEHAVIOUR: assign LFO #8 to currently selected param",Copy/clone (single press enables copy mode where a step can be pressed and then is copied and then subsequent presses in 4x4 place a copy of that step… a long press on this button clones the current *pattern* to the next available pattern slot)
+"4x4 note #9
+","4x4 note #10
+","4x4 note #11
+
+SHIFT BEHAVIOUR: Turn on retrigger mode - all subsequent presses on 4x4 apply retrigger to that step for currently selected engine. Turned off by shift pressing this button again. For now this can be a simple triple hit retrigger, no pitch change.. further settings to come later.","4x4 note #12
+
+SHIFT BEHAVIOUR: Increase octave range of notes by one (doesn’t effect drum kits)",When in not playing mode (i.e. toggle to write) - click enables DELETE mode where subsequent clicks on 4x4 deletes notes for current engine.. and long press on any 4x4 deletes notes for ALL engines. DELETE mode is left by pressing this button again.
+"4x4 note #13
+
+SHIFT BEHAVIOUR:
+Left button for
+Pagination of current pattern - user can scroll through 4 pages of pattern spaces for the current pattern and place steps. Patterns are default 16 steps long but as long as there are pages with steps, so if the user adds steps to page 2 it becomes 32 steps long, page 3 it’s 48, page 4 it’s 64… if I user were to add things to page 4 but nothing on pages 2 and 3, it’s still 64 long with rests for all of page 2 and 3. ","4x4 note #14
+
+SHIFT BEHAVIOUR:
+Right button for
+Pagination behaviour described to left","4x4 note #15
+
+SHIFT BEHAVIOUR: Turn on accent mode - all subsequent presses on 4x4 apply accent to that step for currently selected engine. Turned off by shift pressing this button again.","4x4 note #16
+
+SHIFT BEHAVIOUR: decrease octave range of notes by one (doesn’t effect drum kits)","Write (when unit not playing this should be a toggle button to switch between write mode and not, as it works now.. but when the unit *is* playing this button needs to be held down to enable write mode for playing notes directly in.. vs currently it’s toggled on and off when both playing and not)
+
+"

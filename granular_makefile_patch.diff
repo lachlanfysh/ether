@@ -1,0 +1,66 @@
+--- a/Makefile
++++ b/Makefile
+@@ -31,6 +31,7 @@ TEST_RMS_TARGET = test_headless_rms
+ TEST_LFO_TARGET = test_lfo_assign
+ TEST_GRID_TARGET = test_grid_paths
+ BENCH_TARGET = bench_audio
++TEST_GRANULAR_TARGET = test_granular_fx
+ 
+ # Default target
+ all: $(TARGET)
+@@ -69,6 +70,11 @@ $(BENCH_TARGET): tools/bench_audio.cpp harmonized_13_engines_bridge.cpp
+ 	$(CXX) $(CXXFLAGS) $(INCLUDES) -o $@ $^ $(LIBS) -lm
+ 	@echo "✅ Built: $@"
+ 
++$(TEST_GRANULAR_TARGET): tests/test_granular_fx.cpp harmonized_13_engines_bridge.cpp src/processing/effects/GranularFX.cpp
++	@echo "🔗 Linking granular FX test..."
++	$(CXX) $(CXXFLAGS) $(INCLUDES) -o $@ $^ $(LIBS) -lm
++	@echo "✅ Built: $@"
++
+ # Test suite targets
+ test-fast: $(TEST_RMS_TARGET)
+ 	@echo "🚀 Running fast parameter sweep test..."
+@@ -82,6 +88,10 @@ test-sys: $(TEST_GRID_TARGET)
+ 	@echo "🎹 Running grid sequencer system test..."
+ 	./$(TEST_GRID_TARGET)
+ 
++test-granular: $(TEST_GRANULAR_TARGET)
++	@echo "🌌 Running granular FX test..."
++	./$(TEST_GRANULAR_TARGET)
++
+ test-perf: $(TEST_RMS_TARGET) $(TEST_LFO_TARGET) $(TEST_GRID_TARGET)
+ 	@echo "⚡ Running performance test suite..."
+ 	@echo "==================================="
+@@ -96,7 +106,7 @@ test-perf: $(TEST_RMS_TARGET) $(TEST_LFO_TARGET) $(TEST_GRID_TARGET)
+ 	@echo ""
+ 	@echo "✅ Performance test suite complete"
+ 
+-test-all: test-fast test-int test-sys
++test-all: test-fast test-int test-sys test-granular
+ 	@echo "🎉 All tests completed!"
+ 
+ # Benchmark targets
+@@ -127,7 +137,7 @@ $(BENCH_TARGET): tools/bench_audio.cpp harmonized_13_engines_bridge.cpp
+ clean:
+ 	@echo "🧹 Cleaning build artifacts..."
+ 	find . -name "*.o" -delete
+-	rm -f $(TARGET) $(BRIDGE_TARGET) $(TEST_RMS_TARGET) $(TEST_LFO_TARGET) $(TEST_GRID_TARGET) $(BENCH_TARGET)
++	rm -f $(TARGET) $(BRIDGE_TARGET) $(TEST_RMS_TARGET) $(TEST_LFO_TARGET) $(TEST_GRID_TARGET) $(BENCH_TARGET) $(TEST_GRANULAR_TARGET)
+ 	@echo "✅ Clean complete"
+ 
+ # Show available engines (requires successful build)
+@@ -159,6 +169,7 @@ help:
+ 	@echo "  test-fast - Run fast parameter sweep tests"
+ 	@echo "  test-int  - Run LFO integration tests"  
+ 	@echo "  test-sys  - Run grid sequencer system tests"
++	@echo "  test-granular - Run granular FX tests"
+ 	@echo "  test-perf - Run all tests with performance timing"
+ 	@echo "  test-all  - Run complete test suite"
+ 	@echo "  bench     - Run default audio benchmark"
+@@ -172,4 +183,4 @@ help:
+ 	@echo "Usage:"
+ 	@echo "  make          # Build terminal interface"
+ 	@echo "  ./$(TARGET)   # Run terminal EtherSynth"
+ 
+-.PHONY: all clean test demo engines help test-fast test-int test-sys test-perf test-all bench bench-quick bench-stress bench-baseline
++.PHONY: all clean test demo engines help test-fast test-int test-sys test-granular test-perf test-all bench bench-quick bench-stress bench-baseline

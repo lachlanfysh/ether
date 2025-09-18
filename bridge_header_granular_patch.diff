@@ -1,0 +1,18 @@
+--- a/EtherSynthBridge.h
++++ b/EtherSynthBridge.h
+@@ -113,8 +113,15 @@ float ether_get_core_parameter(void* synth, int param_id);
+ 
+ // ===== FX CHAIN C API =====
+ void ether_set_instrument_reverb_send(void* synth, int instrument, float amount);
+ void ether_set_instrument_delay_send(void* synth, int instrument, float amount);
++
++// Extended FX send control: which = 0 (reverb), 1 (delay), 2 (granular)
++void ether_set_engine_fx_send(void* synth, int instrument, int which, float value);
++
++// Granular FX parameters (global)
++// whichParam: 0=Size, 1=Density, 2=Position, 3=Jitter, 4=Pitch, 5=Spread,
++//             6=Texture, 7=Feedback, 8=Freeze, 9=Wet, 10=ReturnHPF, 11=ReturnLPF
++void ether_set_granular_param(void* synth, int whichParam, float value);
+ 
+ // ===== GLOBAL REVERB/DELAY PARAMS =====
+ void ether_set_reverb_time(void* synth, float value);    // 0..1

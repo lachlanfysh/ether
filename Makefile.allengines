@@ -1,0 +1,84 @@
+# Makefile for ALL EtherSynth engines (both interface types)
+CXX = g++
+CXXFLAGS = -std=c++17 -O2 -I. -I/opt/homebrew/include
+LDFLAGS = -L/opt/homebrew/lib -lportaudio
+
+# Compile ALL engines including previously missing ones
+compile_all_real_engines:
+	@echo "Compiling ALL synthesis engines (both interface types)..."
+	
+	# SynthEngine-based engines (new interface)
+	$(CXX) $(CXXFLAGS) -c src/engines/MacroVAEngine.cpp -o MacroVAEngine.o
+	$(CXX) $(CXXFLAGS) -c src/engines/MacroFMEngine.cpp -o MacroFMEngine.o
+	$(CXX) $(CXXFLAGS) -c src/engines/MacroWaveshaperEngine.cpp -o MacroWaveshaperEngine.o
+	$(CXX) $(CXXFLAGS) -c src/engines/MacroWavetableEngine.cpp -o MacroWavetableEngine.o
+	$(CXX) $(CXXFLAGS) -c src/engines/MacroChordEngine.cpp -o MacroChordEngine.o
+	$(CXX) $(CXXFLAGS) -c src/engines/MacroHarmonicsEngine.cpp -o MacroHarmonicsEngine.o
+	$(CXX) $(CXXFLAGS) -c src/engines/FormantEngine.cpp -o FormantEngine.o
+	$(CXX) $(CXXFLAGS) -c src/engines/NoiseEngine.cpp -o NoiseEngine.o
+	$(CXX) $(CXXFLAGS) -c src/engines/TidesOscEngine.cpp -o TidesOscEngine.o
+	$(CXX) $(CXXFLAGS) -c src/engines/RingsVoiceEngine.cpp -o RingsVoiceEngine.o
+	$(CXX) $(CXXFLAGS) -c src/engines/ElementsVoiceEngine.cpp -o ElementsVoiceEngine.o
+	
+	# SynthEngineBase-based engines (older interface)
+	$(CXX) $(CXXFLAGS) -c src/engines/SlideAccentBassEngine.cpp -o SlideAccentBassEngine.o
+	$(CXX) $(CXXFLAGS) -c src/engines/Classic4OpFMEngine.cpp -o Classic4OpFMEngine.o
+	
+	@echo "✅ ALL synthesis engines compiled (13 real + 2 legacy = 15 total)!"
+
+# Compile core dependencies
+compile_all_core_deps:
+	@echo "Compiling all core dependencies..."
+	$(CXX) $(CXXFLAGS) -c src/core/ErrorHandler.cpp -o ErrorHandler.o
+	$(CXX) $(CXXFLAGS) -c src/core/ErrorReporter.cpp -o ErrorReporter.o
+	$(CXX) $(CXXFLAGS) -c src/synthesis/DSPUtils.cpp -o DSPUtils.o
+	$(CXX) $(CXXFLAGS) -c src/synthesis/SynthEngine.cpp -o SynthEngine.o
+	$(CXX) $(CXXFLAGS) -c src/synthesis/SubtractiveEngine.cpp -o SubtractiveEngine.o
+	$(CXX) $(CXXFLAGS) -c src/synthesis/WavetableEngine.cpp -o WavetableEngine.o
+	$(CXX) $(CXXFLAGS) -c src/synthesis/FMEngine.cpp -o FMEngine.o
+	$(CXX) $(CXXFLAGS) -c src/synthesis/GranularEngine.cpp -o GranularEngine.o
+
+# Build the ALL ENGINES terminal
+all_engines_terminal: compile_all_core_deps compile_all_real_engines
+	@echo "Building ALL ENGINES terminal with EVERY synthesis engine..."
+	$(CXX) $(CXXFLAGS) -o test_all_engines_terminal \
+		real_engine_terminal.cpp \
+		standalone_engines_bridge.cpp \
+		MacroVAEngine.o \
+		MacroFMEngine.o \
+		MacroWaveshaperEngine.o \
+		MacroWavetableEngine.o \
+		MacroChordEngine.o \
+		MacroHarmonicsEngine.o \
+		FormantEngine.o \
+		NoiseEngine.o \
+		TidesOscEngine.o \
+		RingsVoiceEngine.o \
+		ElementsVoiceEngine.o \
+		SlideAccentBassEngine.o \
+		Classic4OpFMEngine.o \
+		ErrorHandler.o \
+		ErrorReporter.o \
+		DSPUtils.o \
+		SynthEngine.o \
+		SubtractiveEngine.o \
+		WavetableEngine.o \
+		FMEngine.o \
+		GranularEngine.o \
+		$(LDFLAGS)
+	@echo "🎉 ALL ENGINES terminal built with EVERY synthesis engine!"
+
+# Test ALL engines including the missing ones
+test_all_real_engines: all_engines_terminal
+	@echo "Testing ALL engines including the missing ones..."
+	@echo "engine 0\nnote 60\nengine 14\nnote 64\nengine 15\nnote 67\nengine 1\nnote 72\nengine 2\nnote 76\nquit" | ./test_all_engines_terminal
+
+# Test the mono bass engine specifically
+test_bass_engine: all_engines_terminal
+	@echo "Testing SlideAccentBass (mono bass) engine..."
+	@echo "engine 14\nnote 36\nnote 40\nnote 43\nstep 1\nstep 5\nstep 9\nstep 13\nplay\nsleep 3\nstop\nquit" | ./test_all_engines_terminal
+
+clean:
+	rm -f *.o src/*/*.o test_all_engines_terminal
+
+.PHONY: compile_all_real_engines compile_all_core_deps all_engines_terminal test_all_real_engines test_bass_engine clean

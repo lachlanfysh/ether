@@ -1,0 +1,57 @@
+# Makefile for proper step sequencer terminal
+CXX = g++
+CXXFLAGS = -std=c++17 -O2 -I. -I/opt/homebrew/include
+LDFLAGS = -L/opt/homebrew/lib -lportaudio
+
+# Build step sequencer with proper pattern programming
+step_sequencer: 
+	@echo "Building step sequencer terminal with proper pattern programming..."
+	$(CXX) $(CXXFLAGS) -o test_step_sequencer \
+		step_sequencer_terminal.cpp \
+		complete_real_bridge.cpp \
+		MacroVAEngine.o \
+		MacroFMEngine.o \
+		MacroWaveshaperEngine.o \
+		MacroWavetableEngine.o \
+		MacroChordEngine.o \
+		MacroHarmonicsEngine.o \
+		FormantEngine.o \
+		NoiseEngine.o \
+		TidesOscEngine.o \
+		RingsVoiceEngine.o \
+		ElementsVoiceEngine.o \
+		SlideAccentBassEngine.o \
+		Classic4OpFMEngine.o \
+		FMOperator.o \
+		OversamplingProcessor.o \
+		ErrorHandler.o \
+		ErrorReporter.o \
+		DSPUtils.o \
+		SynthEngine.o \
+		SubtractiveEngine.o \
+		WavetableEngine.o \
+		FMEngine.o \
+		GranularEngine.o \
+		$(LDFLAGS)
+	@echo "✅ Step sequencer built with proper pattern programming!"
+
+# Test the step sequencer with a simple pattern
+test_step_sequencer: step_sequencer
+	@echo "Testing step sequencer with proper pattern programming..."
+	@echo "engine 1\nstep 1 8\nstep 5 12\nstep 9 4\nstep 13 15\nplay\nsleep 4\nstop\nquit" | ./test_step_sequencer
+
+# Show help and demo
+demo_step_sequencer: step_sequencer
+	@echo "Demo: Step sequencer with note programming"
+	@echo "Try these commands:"
+	@echo "  step 1 8    - Set step 1 to C4 (scale note 8)"
+	@echo "  step 5 12   - Set step 5 to G5 (scale note 12)" 
+	@echo "  step 9 4    - Set step 9 to G4 (scale note 4)"
+	@echo "  play        - Start the sequence"
+	@echo "Starting demo..."
+	./test_step_sequencer
+
+clean:
+	rm -f test_step_sequencer
+
+.PHONY: step_sequencer test_step_sequencer demo_step_sequencer clean

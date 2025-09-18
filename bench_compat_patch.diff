@@ -1,0 +1,47 @@
+--- a/tools/bench_audio.cpp
++++ b/tools/bench_audio.cpp
+@@ -140,15 +140,21 @@ bool setupEngines(void* synth, const BenchConfig& config) {
+         int engine_type = engine_types[i % 4];
+         
+         // Set instrument type (this creates and initializes the engine)
+-        ether_set_instrument_type(synth, slot, engine_type);
++        if (ether_set_instrument_type) {
++            ether_set_instrument_type(synth, slot, engine_type);
++        } else {
++            std::cout << "    SKIPPED: ether_set_instrument_type not available" << std::endl;
++        }
+         
+         // Configure engine with some parameters for realistic load
+-        ether_set_parameter(synth, slot, 0, 0.6f);  // HARMONICS
+-        ether_set_parameter(synth, slot, 1, 0.4f);  // TIMBRE
+-        ether_set_parameter(synth, slot, 2, 0.3f);  // MORPH
+-        ether_set_parameter(synth, slot, 10, 0.7f); // VOLUME
++        if (ether_set_core_parameter) {
++            ether_set_core_parameter(synth, 0, 0.6f);  // HARMONICS
++            ether_set_core_parameter(synth, 1, 0.4f);  // TIMBRE
++            ether_set_core_parameter(synth, 2, 0.3f);  // MORPH
++            ether_set_core_parameter(synth, 10, 0.7f); // VOLUME
++        }
+         
+         // Set active instrument to this slot for note triggering
++        if (ether_set_active_instrument) {
+             ether_set_active_instrument(synth, slot);
++        }
+         
+         // Trigger a sustained note for processing load
+         ether_note_on(synth, 60 + (i * 4), 0.8f, 0.0f); // C4, E4, G4, B4
+@@ -159,8 +165,12 @@ bool setupEngines(void* synth, const BenchConfig& config) {
+     }
+     
+     // Set master volume
+-    ether_set_master_volume(synth, 0.6f);
+-    ether_set_bpm(synth, 120.0f);
++    if (ether_set_master_volume) {
++        ether_set_master_volume(synth, 0.6f);
++    }
++    if (ether_set_bpm) {
++        ether_set_bpm(synth, 120.0f);
++    }
+     
+     return true;
+ }

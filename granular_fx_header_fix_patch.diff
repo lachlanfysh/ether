@@ -1,0 +1,11 @@
+--- a/src/processing/effects/GranularFX.h
++++ b/src/processing/effects/GranularFX.h
+@@ -108,6 +108,7 @@ private:
+     void scheduleGrains(size_t blockSize);
+     void processGrains(float* outputL, float* outputR, size_t blockSize);
+     void applyReturnFiltering(float* outputL, float* outputR, size_t blockSize);
+     void applyFeedback(const float* wetL, const float* wetR, size_t blockSize);
++    void scheduleNewGrain(Grain& grain);
+     
+     // Parameter mapping utilities
+     float mapSize(float norm) const;        // 10-500ms log mapping

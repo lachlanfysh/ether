@@ -1,0 +1,3 @@
+Map internal engine IDs to neutral display names: Analogue, FM, Wavetable, Shaper, Vocal, Modal, Exciter, Morph, Noise, Sampler, Filter, Acid, Multi-Voice.
+For each display name, list internal identifiers it covers, 1–2 line rationale, and ambiguity notes (e.g., MacroHarmonics & Tides both → Morph). Include Granular as a future category and placeholder mapping.
+

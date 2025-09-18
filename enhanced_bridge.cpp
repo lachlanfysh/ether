@@ -63,6 +63,30 @@ const char* getEngineTypeName(EngineType type) {
         case EngineType::DRUM_KIT: return "DrumKit";
         case EngineType::SAMPLER_KIT: return "SamplerKit";
         case EngineType::SAMPLER_SLICER: return "SamplerSlicer";
+        case EngineType::GRANULAR: return "Granular";
+        default: return "Unknown";
+    }
+}
+
+extern "C" const char* ether_get_engine_display_name(int engine_type) {
+    if (engine_type < 0 || engine_type >= static_cast<int>(EngineType::COUNT)) return "Unknown";
+    EngineType t = static_cast<EngineType>(engine_type);
+    switch (t) {
+        case EngineType::MACRO_VA: return "Analogue";
+        case EngineType::MACRO_FM: return "FM";
+        case EngineType::MACRO_WAVESHAPER: return "Shaper";
+        case EngineType::MACRO_WAVETABLE: return "Wavetable";
+        case EngineType::MACRO_CHORD: return "Multi-Voice";
+        case EngineType::MACRO_HARMONICS: return "Morph";
+        case EngineType::FORMANT_VOCAL: return "Vocal";
+        case EngineType::NOISE_PARTICLES: return "Noise";
+        case EngineType::TIDES_OSC: return "Morph";
+        case EngineType::RINGS_VOICE: return "Modal";
+        case EngineType::ELEMENTS_VOICE: return "Exciter";
+        case EngineType::DRUM_KIT: return "Drum Kit";
+        case EngineType::SAMPLER_KIT: return "Sampler";
+        case EngineType::SAMPLER_SLICER: return "Sampler";
+        case EngineType::GRANULAR: return "Granular";
         default: return "Unknown";
     }
 }
@@ -86,9 +110,12 @@ const char* getEngineCategory(EngineType type) {
         case EngineType::ELEMENTS_VOICE:
             return "Physical Models";
         case EngineType::DRUM_KIT:
+            return "Drums";                  // Distinct category for the synth drum engine
         case EngineType::SAMPLER_KIT:
         case EngineType::SAMPLER_SLICER:
-            return "Percussion & Samples";
+            return "Sampler";                // Sample-based instruments remain separate
+        case EngineType::GRANULAR:
+            return "Granular";
         default:
             return "Other";
     }
@@ -527,6 +554,15 @@ void ether_set_pattern_step(void* synth, unsigned char step, unsigned char note,
     if (synth && step < 32 && velocity >= 0.0f && velocity <= 1.0f) {
         std::cout << "Enhanced Bridge: Set step " << static_cast<int>(step) 
                   << " note=" << static_cast<int>(note) << " vel=" << velocity << std::endl;
+    }
+}
+
+// Add missing shutdown function
+void ether_shutdown(void* synth) {
+    if (synth) {
+        EtherSynthInstance* instance = reinterpret_cast<EtherSynthInstance*>(synth);
+        std::cout << "EtherSynth shutdown" << std::endl;
+        // Cleanup would happen here
     }
 }
 

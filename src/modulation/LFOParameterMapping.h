@@ -28,7 +28,7 @@ namespace EtherSynthModulation {
 
 class LFOParameterMapping {
 public:
-    static constexpr int MAX_INSTRUMENT_LFOS = 4;  // LFO1-4 per instrument
+    static constexpr int MAX_INSTRUMENT_LFOS = 8;  // Final: LFO1–LFO8 per instrument
     static constexpr int MAX_INSTRUMENTS = 8;      // I1-I8
     static constexpr int MAX_PARAMETERS = 16;      // 16-key parameter system
     

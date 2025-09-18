@@ -1,0 +1,43 @@
+--- a/harmonized_13_engines_bridge.cpp
++++ b/harmonized_13_engines_bridge.cpp
+@@ -900,6 +900,32 @@ void ether_trigger_lfo_envelope(void* synth, int instrument, int lfoIndex, bool
+     in->globalLFO->triggerEnvelope(instrument, lfoIndex, noteOn);
+ }
+ 
++// ===== Core Parameter Bridge Functions =====
++
++void ether_set_core_parameter(void* synth, int param_id, float value) {
++    auto* in = inst(synth);
++    if (!in) return;
++    
++    int slot = in->activeInstrument;
++    if (slot < 0 || slot >= SLOT_COUNT) return;
++    
++    auto* engine = in->engines[slot].get();
++    if (!engine) return;
++    
++    // Convert param_id to ParameterID enum
++    if (param_id < 0 || param_id >= static_cast<int>(ParameterID::COUNT)) return;
++    
++    engine->setParameter(static_cast<ParameterID>(param_id), value);
++}
++
++float ether_get_core_parameter(void* synth, int param_id) {
++    auto* in = inst(synth);
++    if (!in) return 0.0f;
++    
++    int slot = in->activeInstrument;
++    if (slot < 0 || slot >= SLOT_COUNT) return 0.0f;
++    
++    auto* engine = in->engines[slot].get();
++    if (!engine) return 0.0f;
++    
++    // Convert param_id to ParameterID enum
++    if (param_id < 0 || param_id >= static_cast<int>(ParameterID::COUNT)) return 0.0f;
++    
++    return engine->getParameter(static_cast<ParameterID>(param_id));
++}
++
+ // ===== FX CHAIN C API =====
+ void ether_set_instrument_reverb_send(void* synth, int instrument, float amount) {
+     auto *in = inst(synth);

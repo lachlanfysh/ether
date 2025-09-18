@@ -1,0 +1,34 @@
+--- a/harmonized_13_engines_bridge.cpp
++++ b/harmonized_13_engines_bridge.cpp
+@@ -850,6 +881,19 @@ void ether_set_lfo_adsr(void* synth, int instrument, int lfoIndex, float attack
+     in->globalLFO->setADSR(instrument, lfoIndex, attack, decay, sustain, release);
+ }
+ 
++void ether_trigger_lfo_key_sync(void* synth, int instrument) {
++    auto *in = inst(synth);
++    if (!in || !in->globalLFO) return;
++    
++    in->globalLFO->triggerKeySync(instrument);
++}
++
++void ether_trigger_lfo_envelope(void* synth, int instrument, int lfoIndex, bool noteOn) {
++    auto *in = inst(synth);
++    if (!in || !in->globalLFO) return;
++    
++    in->globalLFO->triggerEnvelope(instrument, lfoIndex, noteOn);
++}
++
+ // ===== FX CHAIN C API =====
+ void ether_set_instrument_reverb_send(void* synth, int instrument, float amount) {
+     auto *in = inst(synth);
+
+--- a/Makefile
++++ b/Makefile
+@@ -15,6 +15,7 @@ SOURCES = \
+ 	src/engines/SerialHPLPEngine.cpp \
+ 	src/engines/SlideAccentBassEngine.cpp \
+ 	src/synthesis/SynthEngine.cpp \
++	src/modulation/GlobalLFOSystem.cpp \
+ 	harmonized_13_engines_bridge.cpp
+ 
+ # Object files

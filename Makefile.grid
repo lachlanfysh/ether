@@ -1,0 +1,55 @@
+# Grid Sequencer Makefile
+CXX = g++
+CXXFLAGS = -std=c++17 -O3 -DNDEBUG -I/opt/homebrew/include
+VERSION_BASE = Grid_v0.3.x_drumsrev
+STAMP = $(shell date +%Y-%m-%dT%H:%M:%S%z)
+GITREV = $(shell git rev-parse --short HEAD 2>/dev/null)
+BUILD_STR = $(VERSION_BASE)_$(STAMP)$(if $(GITREV),_$(GITREV),)
+CXXFLAGS += -DBUILD_VERSION=\"$(BUILD_STR)\"
+LDFLAGS = -L/opt/homebrew/lib -lportaudio -llo
+
+# Source files
+GRID_SOURCES = grid_sequencer.cpp harmonized_13_engines_bridge.cpp encoder_control_system.cpp \
+	src/synthesis/SynthEngine.cpp src/synthesis/GranularEngine.cpp \
+	src/synthesis/WavetableEngine.cpp src/synthesis/SubtractiveEngine.cpp src/synthesis/FMEngine.cpp
+GRID_TARGET = grid_sequencer
+
+# Simple hello test
+HELLO_SOURCES = grid_hello.cpp
+HELLO_TARGET = grid_hello
+
+# 15 fully working harmonized EtherSynth engines
+ENGINE_SOURCES = \
+	src/engines/MacroVAEngine.cpp \
+	src/engines/MacroFMEngine.cpp \
+	src/engines/MacroWaveshaperEngine.cpp \
+	src/engines/MacroWavetableEngine.cpp \
+	src/engines/MacroChordEngine.cpp \
+	src/engines/MacroHarmonicsEngine.cpp \
+	src/engines/FormantEngine.cpp \
+	src/engines/NoiseEngine.cpp \
+	src/engines/TidesOscEngine.cpp \
+	src/engines/RingsVoiceEngine.cpp \
+	src/engines/ElementsVoiceEngine.cpp \
+	src/engines/SlideAccentBassEngine.cpp \
+	src/engines/Classic4OpFMEngine.cpp \
+	src/engines/SamplerSlicerEngine.cpp \
+	src/engines/SerialHPLPEngine.cpp \
+	src/engines/DrumKitEngine.cpp
+
+# Include paths
+INCLUDES = -Isrc/core -Isrc/engines
+
+# Build rule
+$(GRID_TARGET): $(GRID_SOURCES) $(ENGINE_SOURCES)
+	$(CXX) $(CXXFLAGS) $(INCLUDES) $(GRID_SOURCES) $(ENGINE_SOURCES) -o $(GRID_TARGET) $(LDFLAGS)
+
+# Build grid_hello (no engines or PortAudio needed, but LDFLAGS okay)
+$(HELLO_TARGET): $(HELLO_SOURCES)
+	$(CXX) $(CXXFLAGS) $(INCLUDES) $(HELLO_SOURCES) -o $(HELLO_TARGET) $(LDFLAGS)
+
+# Clean rule
+clean:
+	rm -f $(GRID_TARGET) $(HELLO_TARGET)
+
+.PHONY: clean

@@ -1,0 +1,35 @@
+--- a/src/engines/GranularEngine.cpp
++++ b/src/engines/GranularEngine.cpp
+@@ -44,11 +44,11 @@ void GranularEngine::setParameter(ParameterID param, float value) {
+     float v = std::clamp(value, 0.0f, 1.0f);
+     switch (param) {
+         // Core 16 parameter mapping
+-        case ParameterID::HARMONICS: position_ = v; break;  // Buffer position
+-        case ParameterID::TIMBRE: size_ = v; break;         // Grain size
+-        case ParameterID::MORPH: density_ = v; break;       // Grain density
+-        case ParameterID::TONE: jitter_ = v; break;         // Timing/pitch jitter
+-        case ParameterID::MIX: texture_ = v; break;         // Window texture
+-        case ParameterID::PITCH: pitch_ = v; break;         // Pitch offset
++        case ParameterID::HARMONICS: position_ = v; break;    // Buffer position
++        case ParameterID::TIMBRE: size_ = v; break;           // Grain size (10-200ms log)
++        case ParameterID::MORPH: density_ = v; break;         // Grain density (5-50/sec)
++        case ParameterID::OSC_MIX: jitter_ = v; break;        // Timing/pitch jitter
++        case ParameterID::DETUNE: texture_ = v; break;        // Window texture (Hann↔Tukey)
++        case ParameterID::SUB_LEVEL: pitch_ = v; break;       // Pitch offset (-12..+12 semitones)
+         case ParameterID::PAN: spread_ = v; break;          // Stereo spread
+         case ParameterID::VOLUME: volume_ = v; break;
+         default: break; // Others handled by post-chain
+@@ -59,9 +59,9 @@ float GranularEngine::getParameter(ParameterID param) const {
+     switch (param) {
+         case ParameterID::HARMONICS: return position_;
+         case ParameterID::TIMBRE: return size_;
+         case ParameterID::MORPH: return density_;
+-        case ParameterID::TONE: return jitter_;
+-        case ParameterID::MIX: return texture_;
+-        case ParameterID::PITCH: return pitch_;
++        case ParameterID::OSC_MIX: return jitter_;
++        case ParameterID::DETUNE: return texture_;
++        case ParameterID::SUB_LEVEL: return pitch_;
+         case ParameterID::PAN: return spread_;
+         case ParameterID::VOLUME: return volume_;
+         default: return 0.5f;

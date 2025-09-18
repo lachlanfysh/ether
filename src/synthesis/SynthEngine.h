@@ -1,5 +1,7 @@
 #pragma once
 #include "../core/Types.h"
+#include "../core/CoreParameters.h"
+#include "../core/PostChainProcessor.h"
 #include <memory>
 #include <vector>
 
@@ -22,12 +24,26 @@ public:
     virtual void setAftertouch(uint8_t note, float aftertouch) = 0;
     virtual void allNotesOff() = 0;
     
-    // Parameter control
+    // Core parameter control (16 standardized parameters)
+    virtual void setCoreParameter(EtherSynth::CoreParameter param, float value);
+    virtual float getCoreParameter(EtherSynth::CoreParameter param) const;
+    
+    // Engine-specific parameters (legacy compatibility)
     virtual void setParameter(ParameterID param, float value) = 0;
     virtual float getParameter(ParameterID param) const = 0;
     virtual bool hasParameter(ParameterID param) const = 0;
     
-    // Audio processing (must be real-time safe)
+    // Core parameter native support detection
+    virtual bool hasNativeCoreSupport(EtherSynth::CoreParameter param) const { return false; }
+    
+    // Engine-specific audio processing (mono output)
+    // Provide safe default implementations so existing engines don't need to implement these.
+    // Engines that need per-sample or mono-buffer processing can override as needed.
+    virtual float processEngineSample() { return 0.0f; }
+    virtual void processEngineBuffer(float* /*buffer*/, size_t /*frames*/) {}
+    
+    // Final audio processing (stereo output)
+    // Derived engines must implement this; no 'final' to allow overrides.
     virtual void processAudio(EtherAudioBuffer& outputBuffer) = 0;
     
     // Voice management
@@ -54,13 +70,21 @@ public:
     virtual bool supportsModulation(ParameterID target) const { return false; }
     
 protected:
+    // Core parameter system
+    EtherSynth::CoreParams coreParams_;
+    EtherSynth::PostChainProcessor postProcessor_;
+    
     // Common utilities for derived classes
     float sampleRate_ = SAMPLE_RATE;
     size_t bufferSize_ = BUFFER_SIZE;
     size_t maxVoices_ = MAX_VOICES;
     
+    // Update post-chain when parameters change
+    virtual void updatePostChain();
+    
     // Parameter validation
     float validateParameter(ParameterID param, float value) const;
+    float validateCoreParameter(EtherSynth::CoreParameter param, float value) const;
     
     // Common parameter ranges
     static constexpr float getParameterMin(ParameterID param);

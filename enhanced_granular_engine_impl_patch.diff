@@ -1,0 +1,264 @@
+--- a/src/engines/GranularEngine.cpp
++++ b/src/engines/GranularEngine.cpp
+@@ -1,69 +1,236 @@
+ #include "GranularEngine.h"
+ #include <cmath>
++#include <algorithm>
+ 
+ GranularEngine::GranularEngine() {
+-    std::random_device rd; rng_ = std::mt19937(rd());
++    std::random_device rd; 
++    rng_ = std::mt19937(rd());
++    initializeBuffers();
++}
++
++void GranularEngine::initializeBuffers() {
++    // Create hybrid sine/noise buffer for granular source
++    for (size_t i = 0; i < BUFFER_SIZE; ++i) {
++        float phase = static_cast<float>(i) / BUFFER_SIZE * 2.0f * M_PI;
++        float sine = std::sin(phase);
++        float noise = uniform_(rng_) * 0.3f;
++        
++        // Blend sine and noise for rich texture
++        internalBuffer_[i] = sine * 0.7f + noise;
++    }
+ }
+ 
+ void GranularEngine::noteOn(uint8_t /*note*/, float velocity, float /*aftertouch*/) {
+     volume_ = std::clamp(velocity, 0.0f, 1.0f);
+     active_ = true;
++    
++    // Initialize grain timing
++    grainTimer_ = 0.0f;
++    nextGrainTime_ = 0.0f;
++    
++    // Clear existing grains
++    for (auto& grain : grains_) {
++        grain.active = false;
++    }
++    activeGrains_ = 0;
+ }
+ 
+ void GranularEngine::noteOff(uint8_t /*note*/) {
+-    active_ = false;
++    // Let existing grains finish naturally
++    active_ = false;
+ }
+ 
+ void GranularEngine::setParameter(ParameterID param, float value) {
+     float v = std::clamp(value, 0.0f, 1.0f);
+     switch (param) {
+-        case ParameterID::HARMONICS: texture_ = v; break;
+-        case ParameterID::TIMBRE: size_ = v; break;
+-        case ParameterID::MORPH: jitter_ = v; break;
++        // Core 16 parameter mapping
++        case ParameterID::HARMONICS: position_ = v; break;  // Buffer position
++        case ParameterID::TIMBRE: size_ = v; break;         // Grain size
++        case ParameterID::MORPH: density_ = v; break;       // Grain density
++        case ParameterID::TONE: jitter_ = v; break;         // Timing/pitch jitter
++        case ParameterID::MIX: texture_ = v; break;         // Window texture
++        case ParameterID::PITCH: pitch_ = v; break;         // Pitch offset
++        case ParameterID::PAN: spread_ = v; break;          // Stereo spread
+         case ParameterID::VOLUME: volume_ = v; break;
+         default: break; // Others handled by post-chain
+     }
+ }
+ 
+ float GranularEngine::getParameter(ParameterID param) const {
+     switch (param) {
+-        case ParameterID::HARMONICS: return texture_;
++        case ParameterID::HARMONICS: return position_;
+         case ParameterID::TIMBRE: return size_;
+-        case ParameterID::MORPH: return jitter_;
++        case ParameterID::MORPH: return density_;
++        case ParameterID::TONE: return jitter_;
++        case ParameterID::MIX: return texture_;
++        case ParameterID::PITCH: return pitch_;
++        case ParameterID::PAN: return spread_;
+         case ParameterID::VOLUME: return volume_;
+         default: return 0.5f;
+     }
+ }
+ 
+ void GranularEngine::processAudio(EtherAudioBuffer& output) {
+-    // Minimal grain cloud: sum a few short windowed sines with random phase/offset
+-    const float baseHz = 220.0f * std::pow(2.0f, (pitch_ - 0.5f) * 2.0f); // ~110..440
+-    const float winDur = 0.02f + size_ * 0.18f; // 20..200 ms
+-    const int grains = 1 + int(2 + density_ * 6); // 3..8 grains per block
++    if (!active_ && activeGrains_ == 0) {
++        for (auto& frame : output) {
++            frame.left = frame.right = 0.0f;
++        }
++        return;
++    }
++    
++    // Clear output buffer
+     for (auto &f : output) { f.left = 0.0f; f.right = 0.0f; }
+-    for (int g=0; g<grains; ++g) {
+-        float freq = baseHz * (0.8f + 0.4f * (uni_(rng_) - 0.5f) * jitter_);
+-        float start = uni_(rng_) * (float)output.size();
+-        for (size_t i=0;i<output.size();++i) {
+-            float t = (float)i / sampleRate_;
+-            float p = 2.0f * (float)M_PI * freq * t + (float)M_PI * 2.0f * uni_(rng_);
+-            // Hann window over winDur seconds centered at start
+-            float rel = ((float)i - start) / (winDur * sampleRate_);
+-            float w = 0.0f;
+-            if (fabsf(rel) < 0.5f) {
+-                float x = (rel + 0.5f) * (float)M_PI; // 0..pi
+-                w = 0.5f - 0.5f * cosf(x);
+-                // Texture: harder window reduces tails
+-                w = std::pow(w, 0.5f + texture_);
++    
++    // Update grain timer and schedule new grains
++    if (active_) {
++        grainTimer_ += static_cast<float>(output.size()) / sampleRate_;
++        
++        while (grainTimer_ >= nextGrainTime_) {
++            scheduleGrain();
++            
++            // Calculate next grain time based on density (5..50 grains/sec)
++            float grainsPerSec = 5.0f + density_ * 45.0f;
++            float baseInterval = 1.0f / grainsPerSec;
++            
++            // Add jitter to timing (±20%)
++            float jitterAmount = jitter_ * 0.2f;
++            float jitteredInterval = baseInterval * (1.0f + (uniform_(rng_) * jitterAmount));
++            
++            nextGrainTime_ = grainTimer_ + jitteredInterval;
++        }
++    }
++    
++    // Process active grains
++    processGrains(output);
++    
++    // Apply master volume
++    for (auto& frame : output) {
++        frame.left *= volume_;
++        frame.right *= volume_;
++    }
++}
++
++void GranularEngine::scheduleGrain() {
++    // Find free grain slot
++    int grainIndex = -1;
++    for (int i = 0; i < MAX_GRAINS; ++i) {
++        if (!grains_[i].active) {
++            grainIndex = i;
++            break;
++        }
++    }
++    
++    if (grainIndex == -1) return; // No free slots
++    
++    auto& grain = grains_[grainIndex];
++    
++    // Calculate grain size (10..200 ms logarithmic)
++    float sizeMs = 10.0f * std::pow(20.0f, size_); // 10ms at 0, 200ms at 1
++    grain.duration = sizeMs * 0.001f * sampleRate_; // Convert to samples
++    
++    // Calculate pitch with jitter
++    float basePitch = (pitch_ - 0.5f) * 24.0f; // -12..+12 semitones
++    float pitchJitter = jitter_ * (uniform_(rng_) * 1.0f); // ±0.5 semitones
++    float totalPitch = basePitch + pitchJitter;
++    float pitchRatio = std::pow(2.0f, totalPitch / 12.0f);
++    
++    // Set grain parameters
++    grain.active = true;
++    grain.phase = 0.0f;
++    grain.phaseInc = pitchRatio;
++    grain.bufferPos = position_ * (BUFFER_SIZE - 1);
++    grain.age = 0.0f;
++    grain.amplitude = 0.3f + uniform_(rng_) * 0.2f; // Slight amplitude variation
++    
++    // Calculate pan gains with spread
++    auto panGains = getPanGains(spread_);
++    grain.panL = panGains.first;
++    grain.panR = panGains.second;
++    
++    activeGrains_++;
++}
++
++void GranularEngine::processGrains(EtherAudioBuffer& output) {
++    for (auto& grain : grains_) {
++        if (!grain.active) continue;
++        
++        for (size_t i = 0; i < output.size(); ++i) {
++            if (grain.age >= grain.duration) {
++                grain.active = false;
++                activeGrains_--;
++                break;
+             }
+-            float s = std::sinf(p) * w * volume_ * 0.2f;
+-            float pan = (spread_ - 0.5f) * 2.0f; // -1..+1
+-            float ang = (pan + 1.0f) * 0.25f * (float)M_PI;
+-            float gL = cosf(ang), gR = sinf(ang);
+-            output[i].left  += s * gL;
+-            output[i].right += s * gR;
++            
++            // Get sample from internal buffer
++            float sample = getSample(grain.bufferPos);
++            
++            // Apply window envelope
++            float windowPhase = grain.age / grain.duration;
++            float window = getWindow(windowPhase, texture_);
++            
++            // Apply grain envelope and panning
++            float grainSample = sample * window * grain.amplitude;
++            
++            output[i].left += grainSample * grain.panL;
++            output[i].right += grainSample * grain.panR;
++            
++            // Update grain state
++            grain.bufferPos += grain.phaseInc;
++            if (grain.bufferPos >= BUFFER_SIZE) {
++                grain.bufferPos -= BUFFER_SIZE;
++            }
++            grain.age += 1.0f;
+         }
+     }
+ }
+ 
++float GranularEngine::getWindow(float phase, float texture) const {
++    // Blend between Hann (texture=0) and Tukey (texture=1) windows
++    float hannWindow = 0.5f - 0.5f * std::cos(2.0f * M_PI * phase);
++    
++    // Tukey window with variable taper
++    float tukeyWindow;
++    float alpha = 0.1f + texture * 0.8f; // Taper from 10% to 90%
++    
++    if (phase <= alpha / 2.0f) {
++        float x = 2.0f * phase / alpha;
++        tukeyWindow = 0.5f - 0.5f * std::cos(M_PI * x);
++    } else if (phase >= 1.0f - alpha / 2.0f) {
++        float x = 2.0f * (1.0f - phase) / alpha;
++        tukeyWindow = 0.5f - 0.5f * std::cos(M_PI * x);
++    } else {
++        tukeyWindow = 1.0f;
++    }
++    
++    // Blend between windows
++    return hannWindow * (1.0f - texture) + tukeyWindow * texture;
++}
++
++float GranularEngine::getSample(float position) const {
++    // Linear interpolation in internal buffer
++    int index = static_cast<int>(position);
++    float frac = position - index;
++    
++    float sample1 = internalBuffer_[index % BUFFER_SIZE];
++    float sample2 = internalBuffer_[(index + 1) % BUFFER_SIZE];
++    
++    return sample1 + frac * (sample2 - sample1);
++}
++
++std::pair<float, float> GranularEngine::getPanGains(float spread) const {
++    // Equal-power panning with per-grain randomization
++    float basePan = uniform_(rng_) * spread * 2.0f - spread; // -spread..+spread
++    float panAngle = (basePan + 1.0f) * 0.25f * M_PI; // 0..π/2
++    
++    float panL = std::cos(panAngle);
++    float panR = std::sin(panAngle);
++    
++    return {panL, panR};
++}
+ 

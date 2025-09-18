@@ -1,0 +1,16 @@
+--- a/EtherSynthBridge.h
++++ b/EtherSynthBridge.h
+@@ -100,6 +100,13 @@ void ether_unassign_lfo_from_param(void* synth, int instrument, int param, int 
+ void ether_clear_all_lfo_assignments(void* synth, int instrument);
+ void ether_set_lfo_active(void* synth, int instrument, int lfoIndex, bool active);
+ 
++// Enhanced LFO API
++void ether_set_lfo_tempo_division(void* synth, int instrument, int lfoIndex, int division);
++void ether_set_lfo_pulse_width(void* synth, int instrument, int lfoIndex, float width);
++void ether_set_lfo_adsr(void* synth, int instrument, int lfoIndex, float attack, float decay, float sustain, float release);
++void ether_trigger_lfo_key_sync(void* synth, int instrument);
++void ether_trigger_lfo_envelope(void* synth, int instrument, int lfoIndex, bool noteOn);
++
+ // ===== FX CHAIN C API =====
+ void ether_set_instrument_reverb_send(void* synth, int instrument, float amount);
+ void ether_set_instrument_delay_send(void* synth, int instrument, float amount);

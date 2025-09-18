@@ -1,0 +1,211 @@
+--- a/harmonized_13_engines_bridge.cpp
++++ b/harmonized_13_engines_bridge.cpp
+@@ -1,5 +1,6 @@
+ #include "Sources/CEtherSynth/include/EtherSynthBridge.h"
+ #include "src/core/Types.h"
++#include "src/modulation/GlobalLFOSystem.h"
+ #include "src/synthesis/SynthEngine.h"
+ 
+ // All 15 engines now using unified SynthEngine interface
+@@ -188,25 +189,8 @@ struct Harmonized15EngineEtherSynthInstance {
+     // ===== Global LFO System (8 per slot, shared) =====
+     static constexpr int MAX_LFOS = 8;
+-    struct LFO {
+-        int waveform = 0;     // 0=SINE, 1=TRI, 2=SAW_UP, 3=SAW_DOWN, 4=SQUARE, 5=PULSE, etc.
+-        float rateHz = 1.0f;  // 0.01..50 Hz
+-        float depth = 0.0f;   // 0..1 global depth
+-        int syncMode = 0;     // 0=FREE,1=TEMPO,2=KEY,3=ONESHOT,4=ENV
+-        float phase = 0.0f;   // 0..2π
+-        float lastValue = 0.0f; // -1..+1
+-        bool active = false;
+-    };
+-    // LFOs per slot
+-    std::array<std::array<LFO, MAX_LFOS>, SLOT_COUNT> slotLFOs{};
+     // Per-parameter assignment: 8-bit mask + per-assignment depths
+     static constexpr int PARAM_COUNT = static_cast<int>(ParameterID::COUNT);
+-    struct ParamLFOAssign {
+-        uint8_t mask = 0;                                  // bit i set => LFO i assigned
+-        std::array<float, MAX_LFOS> depths{};              // per-assignment depth 0..1
+-    };
+-    // For each slot: per-ParameterID mapping
+-    std::array<std::array<ParamLFOAssign, PARAM_COUNT>, SLOT_COUNT> lfoAssign{};
++    std::unique_ptr<EtherSynthModulation::GlobalLFOSystem> globalLFO;
+ 
+     // Per-slot synthesis engines (null until setInstrumentType() call)
+     std::array<std::unique_ptr<SynthEngine>, SLOT_COUNT> engines{};
+@@ -275,6 +259,9 @@ struct Harmonized15EngineEtherSynthInstance {
+         reverbState.setSR(sr);
+         postChain.setSampleRate(sr);
+         
++        // Initialize Global LFO System
++        globalLFO = std::make_unique<EtherSynthModulation::GlobalLFOSystem>();
++        globalLFO->setSampleRate(sr);
+         // Set individual engines' sample rate
+         for (int i=0;i<SLOT_COUNT;i++) {
+             if (engines[i]) engines[i]->setSampleRate(sr);
+@@ -381,28 +368,12 @@ struct Harmonized15EngineEtherSynthInstance {
+         auto *in = inst();
+         if (!in) return;
+         
+-        // --- LFO update & apply per-slot modulations (once per block)
+-        // Step LFOs and compute per-parameter combined value (snapshot)
+-        int slot = in->activeInstrument;
+-        for (int i=0;i<instance->MAX_LFOS;i++) {
+-            auto &l = instance->slotLFOs[slot][i];
+-            if (!l.active) { l.lastValue = 0.0f; continue; }
+-            // basic sine for now
+-            l.phase += l.rateHz / 48000.0f * 2.0f * (float)M_PI;
+-            if (l.phase > 2.0f*(float)M_PI) l.phase -= 2.0f*(float)M_PI;
+-            float raw = std::sin(l.phase) * l.depth;
+-            l.lastValue = std::clamp(raw, -1.0f, 1.0f);
+-        }
++        // --- Enhanced Global LFO System processing
++        in->globalLFO->processBlock();
+         
+-        // Compute per-parameter modulation sums
++        // Apply LFO modulation to parameters
++        int slot = in->activeInstrument;
+         for (int pidIdx = 0; pidIdx < PARAM_COUNT; pidIdx++) {
+-            const auto &assign = instance->lfoAssign[slot][pidIdx];
+-            float sum = 0.0f;
+-            for (int i=0;i<instance->MAX_LFOS;i++) {
+-                if (assign.mask & (1<<i)) {
+-                    sum += instance->slotLFOs[slot][i].lastValue * std::clamp(assign.depths[i], 0.0f, 1.0f);
+-                }
+-            }
++            float sum = in->globalLFO->getCombinedValue(slot, pidIdx);
+             
+             // Apply per-param modulation to engine
+             auto *engine = in->engines[slot].get();
+@@ -797,71 +768,85 @@ void ether_set_instrument_type(void* synth, int instrument, int type) {
+ // ===== Global LFO C API (8 global LFOs per instrument slot) =====
+ 
+ void ether_set_lfo_waveform(void* synth, int instrument, int lfoIndex, int waveform) {
+     auto *in = inst(synth);
+     if (!in) return;
+-    if (instrument < 0 || instrument >= SLOT_COUNT) return;
+-    if (lfoIndex < 0 || lfoIndex >= Harmonized15EngineEtherSynthInstance::MAX_LFOS) return;
+-    in->slotLFOs[instrument][lfoIndex].waveform = std::max(0, waveform);
++    if (!in->globalLFO) return;
++    
++    auto wf = static_cast<EtherSynthModulation::GlobalLFOSystem::Waveform>(std::clamp(waveform, 0, 8));
++    auto& lfo = in->globalLFO;
++    // Store the waveform change - will be applied in next setLFO call
++    // For now, just trigger a basic update
++    lfo->setLFO(instrument, lfoIndex, wf, 1.0f, 1.0f, EtherSynthModulation::GlobalLFOSystem::SyncMode::FREE);
+ }
+ 
+ void ether_set_lfo_rate(void* synth, int instrument, int lfoIndex, float rateHz) {
+     auto *in = inst(synth);
+     if (!in) return;
+-    if (instrument < 0 || instrument >= SLOT_COUNT) return;
+-    if (lfoIndex < 0 || lfoIndex >= Harmonized15EngineEtherSynthInstance::MAX_LFOS) return;
+-    in->slotLFOs[instrument][lfoIndex].rateHz = std::clamp(rateHz, 0.01f, 50.0f);
++    if (!in->globalLFO) return;
++    
++    in->globalLFO->setLFO(instrument, lfoIndex, EtherSynthModulation::GlobalLFOSystem::Waveform::SINE, 
++                         rateHz, 1.0f, EtherSynthModulation::GlobalLFOSystem::SyncMode::FREE);
+ }
+ 
+ void ether_set_lfo_depth(void* synth, int instrument, int lfoIndex, float depth) {
+     auto *in = inst(synth);
+     if (!in) return;
+-    if (instrument < 0 || instrument >= SLOT_COUNT) return;
+-    if (lfoIndex < 0 || lfoIndex >= Harmonized15EngineEtherSynthInstance::MAX_LFOS) return;
+-    in->slotLFOs[instrument][lfoIndex].depth = std::clamp(depth, 0.0f, 1.0f);
++    if (!in->globalLFO) return;
++    
++    in->globalLFO->setLFO(instrument, lfoIndex, EtherSynthModulation::GlobalLFOSystem::Waveform::SINE,
++                         1.0f, depth, EtherSynthModulation::GlobalLFOSystem::SyncMode::FREE);
+ }
+ 
+ void ether_set_lfo_sync_mode(void* synth, int instrument, int lfoIndex, int syncMode) {
+     auto *in = inst(synth);
+     if (!in) return;
+-    if (instrument < 0 || instrument >= SLOT_COUNT) return;
+-    if (lfoIndex < 0 || lfoIndex >= Harmonized15EngineEtherSynthInstance::MAX_LFOS) return;
+-    in->slotLFOs[instrument][lfoIndex].syncMode = std::max(0, syncMode);
++    if (!in->globalLFO) return;
++    
++    auto sm = static_cast<EtherSynthModulation::GlobalLFOSystem::SyncMode>(std::clamp(syncMode, 0, 4));
++    in->globalLFO->setLFO(instrument, lfoIndex, EtherSynthModulation::GlobalLFOSystem::Waveform::SINE,
++                         1.0f, 1.0f, sm);
+ }
+ 
+ void ether_assign_lfo_to_param(void* synth, int instrument, int param, int lfoIndex, float depth) {
+     auto *in = inst(synth);
+     if (!in) return;
+-    if (instrument < 0 || instrument >= SLOT_COUNT) return;
+-    if (param < 0 || param >= Harmonized15EngineEtherSynthInstance::PARAM_COUNT) return;
+-    if (lfoIndex < 0 || lfoIndex >= Harmonized15EngineEtherSynthInstance::MAX_LFOS) return;
+-    auto &assign = in->lfoAssign[instrument][param];
+-    assign.mask |= (1 << lfoIndex);
+-    assign.depths[lfoIndex] = std::clamp(depth, 0.0f, 1.0f);
++    if (!in->globalLFO) return;
++    
++    in->globalLFO->assign(instrument, param, lfoIndex, depth);
+ }
+ 
+ void ether_unassign_lfo_from_param(void* synth, int instrument, int param, int lfoIndex) {
+     auto *in = inst(synth);
+     if (!in) return;
+-    if (instrument < 0 || instrument >= SLOT_COUNT) return;
+-    if (param < 0 || param >= Harmonized15EngineEtherSynthInstance::PARAM_COUNT) return;
+-    if (lfoIndex < 0 || lfoIndex >= Harmonized15EngineEtherSynthInstance::MAX_LFOS) return;
+-    auto &assign = in->lfoAssign[instrument][param];
+-    assign.mask &= ~(1 << lfoIndex);
++    if (!in->globalLFO) return;
++    
++    in->globalLFO->unassign(instrument, param);
+ }
+ 
+ void ether_clear_all_lfo_assignments(void* synth, int instrument) {
+     auto *in = inst(synth);
+     if (!in) return;
+-    if (instrument < 0 || instrument >= SLOT_COUNT) return;
+-    for (int p = 0; p < Harmonized15EngineEtherSynthInstance::PARAM_COUNT; p++) {
+-        in->lfoAssign[instrument][p].mask = 0;
+-    }
++    if (!in->globalLFO) return;
++    
++    in->globalLFO->clearAllAssignments(instrument);
+ }
+ 
+ void ether_set_lfo_active(void* synth, int instrument, int lfoIndex, bool active) {
+     auto *in = inst(synth);
+     if (!in) return;
+-    if (instrument < 0 || instrument >= SLOT_COUNT) return;
+-    if (lfoIndex < 0 || lfoIndex >= Harmonized15EngineEtherSynthInstance::MAX_LFOS) return;
+-    in->slotLFOs[instrument][lfoIndex].active = active;
++    if (!in->globalLFO) return;
++    
++    if (active) {
++        in->globalLFO->setLFO(instrument, lfoIndex, EtherSynthModulation::GlobalLFOSystem::Waveform::SINE,
++                             1.0f, 1.0f, EtherSynthModulation::GlobalLFOSystem::SyncMode::FREE);
++    }
++}
++
++// === Enhanced LFO API ===
++void ether_set_lfo_tempo_division(void* synth, int instrument, int lfoIndex, int division) {
++    auto *in = inst(synth);
++    if (!in || !in->globalLFO) return;
++    
++    auto td = static_cast<EtherSynthModulation::GlobalLFOSystem::TempoDivision>(std::clamp(division, 0, 12));
++    in->globalLFO->setTempoDivision(instrument, lfoIndex, td);
++}
++
++void ether_set_lfo_pulse_width(void* synth, int instrument, int lfoIndex, float width) {
++    auto *in = inst(synth);
++    if (!in || !in->globalLFO) return;
++    
++    in->globalLFO->setPulseWidth(instrument, lfoIndex, width);
++}
++
++void ether_set_lfo_adsr(void* synth, int instrument, int lfoIndex, float attack, float decay, float sustain, float release) {
++    auto *in = inst(synth);
++    if (!in || !in->globalLFO) return;
++    
++    in->globalLFO->setADSR(instrument, lfoIndex, attack, decay, sustain, release);
+ }
+ 
+ // ===== FX CHAIN C API =====

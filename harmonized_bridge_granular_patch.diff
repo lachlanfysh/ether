@@ -1,0 +1,173 @@
+--- a/harmonized_13_engines_bridge.cpp
++++ b/harmonized_13_engines_bridge.cpp
+@@ -1,6 +1,7 @@
+ #include "Sources/CEtherSynth/include/EtherSynthBridge.h"
+ #include "src/core/Types.h"
+ #include "src/modulation/GlobalLFOSystem.h"
++#include "src/processing/effects/GranularFX.h"
+ #include "src/synthesis/SynthEngine.h"
+ 
+ // All 15 engines now using unified SynthEngine interface
+@@ -56,6 +57,8 @@ struct Harmonized15EngineEtherSynthInstance {
+     // Per-slot FX sends
+     std::array<float, SLOT_COUNT> sendReverb{ };
+     std::array<float, SLOT_COUNT> sendDelay{ };
++    std::array<float, SLOT_COUNT> sendGranular{ }; // NEW: Granular FX sends
++    
+     // Global FX params
+     struct DelayFX { float timeMs = 350.0f; float feedback = 0.35f; float mix = 0.2f; } delayFX;
+     struct ReverbFX { float time = 0.9f; float damp = 0.3f; float mix = 0.2f; } reverbFX;
+@@ -97,6 +100,24 @@ struct Harmonized15EngineEtherSynthInstance {
+             }
+         }
+     } reverbState;
++    
++    // Granular FX (Bus C)
++    GranularFX granularFX;
++    
++    // Granular FX parameters (per-slot or global - using global for simplicity)
++    struct GranularParams {
++        float size = 0.3f;          // 10-500ms (log)
++        float density = 0.4f;       // 2-50 grains/s (log)
++        float position = 0.5f;      // 0-1 buffer position
++        float jitter = 0.2f;        // 0-1 randomness
++        float pitch = 0.5f;         // -24 to +24 semitones
++        float spread = 0.3f;        // 0-1 stereo spread
++        float texture = 0.0f;       // 0-1 Hann↔Tukey
++        float feedback = 0.0f;      // 0-1 feedback amount
++        float freeze = 0.0f;        // 0/1 freeze capture
++        float wet = 1.0f;           // 0-1 wet level
++        float returnHPF = 0.0f;     // 20-600Hz return HPF
++        float returnLPF = 1.0f;     // 1k-18kHz return LPF
++    } granularParams;
++    
+     int activeVoices = 0;
+     
+@@ -261,6 +282,9 @@ struct Harmonized15EngineEtherSynthInstance {
+         
+         // Initialize Global LFO System
+         globalLFO = std::make_unique<EtherSynthModulation::GlobalLFOSystem>();
+         globalLFO->setSampleRate(sr);
++        
++        // Initialize Granular FX
++        granularFX.setSampleRate(sr);
+         
+         // Set individual engines' sample rate
+         for (int i=0;i<SLOT_COUNT;i++) {
+@@ -391,10 +415,12 @@ struct Harmonized15EngineEtherSynthInstance {
+         
+         // --- Process Effects Buses ---
+         // Accumulate FX sends from all slots
+-        std::array<float, 256> sendRevL{}, sendRevR{};
+-        std::array<float, 256> sendDlyL{}, sendDlyR{};
++        std::array<float, 256> sendRevL{}, sendRevR{}; // Bus A: Reverb
++        std::array<float, 256> sendDlyL{}, sendDlyR{}; // Bus B: Delay
++        std::array<float, 256> sendGrL{}, sendGrR{};   // Bus C: Granular
+         
+         for (int slot = 0; slot < SLOT_COUNT; ++slot) {
+             float revSend = in->sendReverb[slot];
+             float dlySend = in->sendDelay[slot];
++            float grSend = in->sendGranular[slot];
+             
+             // Get slot output (temp buffer from engine processing)
+             for (size_t i = 0; i < bufferSize; ++i) {
+@@ -402,6 +428,8 @@ struct Harmonized15EngineEtherSynthInstance {
+                 sendRevR[i] += temp[i].right * revSend;
+                 sendDlyL[i] += temp[i].left * dlySend;
+                 sendDlyR[i] += temp[i].right * dlySend;
++                sendGrL[i] += temp[i].left * grSend;
++                sendGrR[i] += temp[i].right * grSend;
+             }
+         }
+         
+@@ -418,6 +446,20 @@ struct Harmonized15EngineEtherSynthInstance {
+         in->reverbState.process(sendRevL.data(), sendRevR.data(), bufferSize, 
+                                in->reverbFX.time, in->reverbFX.damp, in->reverbFX.mix);
+         
++        // Process Granular FX (Bus C) - AFTER reverb/delay
++        // Update granular parameters from cached state
++        in->granularFX.setParameter(GranularFX::PARAM_SIZE, in->granularParams.size);
++        in->granularFX.setParameter(GranularFX::PARAM_DENSITY, in->granularParams.density);
++        in->granularFX.setParameter(GranularFX::PARAM_POSITION, in->granularParams.position);
++        in->granularFX.setParameter(GranularFX::PARAM_JITTER, in->granularParams.jitter);
++        in->granularFX.setParameter(GranularFX::PARAM_PITCH, in->granularParams.pitch);
++        in->granularFX.setParameter(GranularFX::PARAM_SPREAD, in->granularParams.spread);
++        in->granularFX.setParameter(GranularFX::PARAM_TEXTURE, in->granularParams.texture);
++        in->granularFX.setParameter(GranularFX::PARAM_FEEDBACK, in->granularParams.feedback);
++        in->granularFX.setParameter(GranularFX::PARAM_FREEZE, in->granularParams.freeze);
++        in->granularFX.setParameter(GranularFX::PARAM_WET, in->granularParams.wet);
++        in->granularFX.setParameter(GranularFX::PARAM_RETURN_HPF, in->granularParams.returnHPF);
++        in->granularFX.setParameter(GranularFX::PARAM_RETURN_LPF, in->granularParams.returnLPF);
++        
++        // Process granular FX
++        std::array<float, 256> granularOutL{}, granularOutR{};
++        in->granularFX.process(sendGrL.data(), sendGrR.data(), 
++                              granularOutL.data(), granularOutR.data(), bufferSize);
++        
+         // Mix FX returns into main output
+         for (size_t i = 0; i < bufferSize; ++i) {
+             outputBuffer[i].left += sendRevL[i] + sendDlyL[i];
+             outputBuffer[i].right += sendRevR[i] + sendDlyR[i];
++            outputBuffer[i].left += granularOutL[i];   // Add granular FX return
++            outputBuffer[i].right += granularOutR[i];
+         }
+         
+         // Apply master volume
+@@ -916,12 +966,23 @@ void ether_trigger_lfo_envelope(void* synth, int instrument, int lfoIndex, bool
+ }
+ 
+ // ===== FX CHAIN C API =====
++
++// Extended FX send: 0=reverb, 1=delay, 2=granular
+ void ether_set_instrument_reverb_send(void* synth, int instrument, float amount) {
+-    auto *in = inst(synth);
+-    if (!in) return;
+-    if (instrument < 0 || instrument >= SLOT_COUNT) return;
+-    in->sendReverb[instrument] = std::clamp(amount, 0.0f, 1.0f);
++    ether_set_engine_fx_send(synth, instrument, 0, amount);
+ }
+ 
+ void ether_set_instrument_delay_send(void* synth, int instrument, float amount) {
++    ether_set_engine_fx_send(synth, instrument, 1, amount);
++}
++
++void ether_set_engine_fx_send(void* synth, int instrument, int which, float value) {
+     auto *in = inst(synth);
+     if (!in) return;
+     if (instrument < 0 || instrument >= SLOT_COUNT) return;
+-    in->sendDelay[instrument] = std::clamp(amount, 0.0f, 1.0f);
++    
++    float clampedValue = std::clamp(value, 0.0f, 1.0f);
++    
++    switch (which) {
++        case 0: in->sendReverb[instrument] = clampedValue; break;    // Reverb (Bus A)
++        case 1: in->sendDelay[instrument] = clampedValue; break;     // Delay (Bus B) 
++        case 2: in->sendGranular[instrument] = clampedValue; break;  // Granular (Bus C)
++        default: break;
++    }
++}
++
++// Granular FX parameter control (global parameters)
++void ether_set_granular_param(void* synth, int whichParam, float value) {
++    auto *in = inst(synth);
++    if (!in) return;
++    
++    float clampedValue = std::clamp(value, 0.0f, 1.0f);
++    
++    // Map parameter indices to granular params struct
++    switch (whichParam) {
++        case 0: in->granularParams.size = clampedValue; break;          // Size (10-500ms log)
++        case 1: in->granularParams.density = clampedValue; break;       // Density (2-50 grains/s log)
++        case 2: in->granularParams.position = clampedValue; break;      // Position (0-1 buffer)
++        case 3: in->granularParams.jitter = clampedValue; break;        // Jitter (0-1 randomness)
++        case 4: in->granularParams.pitch = clampedValue; break;         // Pitch (-24 to +24 st)
++        case 5: in->granularParams.spread = clampedValue; break;        // Spread (0-1 stereo)
++        case 6: in->granularParams.texture = clampedValue; break;       // Texture (0-1 Hann↔Tukey)
++        case 7: in->granularParams.feedback = clampedValue; break;      // Feedback (0-1)
++        case 8: in->granularParams.freeze = clampedValue; break;        // Freeze (0/1 toggle)
++        case 9: in->granularParams.wet = clampedValue; break;           // Wet (0-1 level)
++        case 10: in->granularParams.returnHPF = clampedValue; break;    // Return HPF (20-600Hz)
++        case 11: in->granularParams.returnLPF = clampedValue; break;    // Return LPF (1k-18kHz)
++        default: break;
++    }
+ }

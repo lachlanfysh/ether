@@ -228,7 +228,7 @@ private:
  */
 class AdvancedLFOManager {
 public:
-    static constexpr int MAX_LFOS = 8;
+    static constexpr int MAX_LFOS = 8; // Final: 8 global LFOs
     
     AdvancedLFOManager();
     ~AdvancedLFOManager() = default;

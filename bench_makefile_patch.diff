@@ -1,0 +1,73 @@
+--- a/Makefile
++++ b/Makefile
+@@ -30,6 +30,7 @@ BRIDGE_TARGET = enhanced_bridge_test
+ TEST_RMS_TARGET = test_headless_rms
+ TEST_LFO_TARGET = test_lfo_assign
+ TEST_GRID_TARGET = test_grid_paths
++BENCH_TARGET = bench_audio
+ 
+ # Default target
+ all: $(TARGET)
+@@ -63,6 +64,11 @@ $(TEST_GRID_TARGET): tests/test_grid_paths.cpp harmonized_13_engines_bridge.cpp
+ 	$(CXX) $(CXXFLAGS) $(INCLUDES) -o $@ $^ $(LIBS) -lm
+ 	@echo "✅ Built: $@"
+ 
++$(BENCH_TARGET): tools/bench_audio.cpp harmonized_13_engines_bridge.cpp
++	@echo "🔗 Linking audio benchmark..."
++	$(CXX) $(CXXFLAGS) $(INCLUDES) -o $@ $^ $(LIBS) -lm
++	@echo "✅ Built: $@"
++
+ # Test suite targets
+ test-fast: $(TEST_RMS_TARGET)
+ 	@echo "🚀 Running fast parameter sweep test..."
+@@ -92,6 +98,22 @@ test-perf: $(TEST_RMS_TARGET) $(TEST_LFO_TARGET) $(TEST_GRID_TARGET)
+ test-all: test-fast test-int test-sys
+ 	@echo "🎉 All tests completed!"
+ 
++# Benchmark targets
++bench: $(BENCH_TARGET)
++	@echo "⚡ Running default audio benchmark (3 engines, 1000 blocks, 75% threshold)..."
++	./$(BENCH_TARGET)
++
++bench-quick: $(BENCH_TARGET)
++	@echo "⚡ Running quick benchmark (2 engines, 500 blocks)..."
++	./$(BENCH_TARGET) -e 2 -n 500 -t 80
++
++bench-stress: $(BENCH_TARGET)
++	@echo "⚡ Running stress benchmark (4 engines, 2000 blocks, 50% threshold)..."
++	./$(BENCH_TARGET) -e 4 -n 2000 -t 50 -v
++
++bench-baseline: $(BENCH_TARGET)
++	@echo "⚡ Running baseline benchmark (no engines)..."
++	./$(BENCH_TARGET) --no-engines -n 1000 -t 10
++
+ # Generic object file rule
+ %.o: %.cpp
+ 	@echo "🔨 Compiling: $<"
+@@ -100,7 +122,7 @@ test-all: test-fast test-int test-sys
+ clean:
+ 	@echo "🧹 Cleaning build artifacts..."
+ 	find . -name "*.o" -delete
+-	rm -f $(TARGET) $(BRIDGE_TARGET) $(TEST_RMS_TARGET) $(TEST_LFO_TARGET) $(TEST_GRID_TARGET)
++	rm -f $(TARGET) $(BRIDGE_TARGET) $(TEST_RMS_TARGET) $(TEST_LFO_TARGET) $(TEST_GRID_TARGET) $(BENCH_TARGET)
+ 	@echo "✅ Clean complete"
+ 
+ # Show available engines (requires successful build)
+@@ -130,6 +152,10 @@ help:
+ 	@echo "  test-sys  - Run grid sequencer system tests"
+ 	@echo "  test-perf - Run all tests with performance timing"
+ 	@echo "  test-all  - Run complete test suite"
++	@echo "  bench     - Run default audio benchmark"
++	@echo "  bench-quick - Run quick benchmark (2 engines, 500 blocks)"
++	@echo "  bench-stress - Run stress test (4 engines, 2000 blocks)"
++	@echo "  bench-baseline - Run baseline benchmark (no engines)"
+ 	@echo "  clean     - Remove build artifacts"
+ 	@echo "  test      - Build and test"
+ 	@echo "  demo      - Show demo commands"
+@@ -139,4 +165,4 @@ help:
+ 	@echo "Usage:"
+ 	@echo "  make          # Build terminal interface"
+ 	@echo "  ./$(TARGET)   # Run terminal EtherSynth"
+ 
+-.PHONY: all clean test demo engines help test-fast test-int test-sys test-perf test-all
++.PHONY: all clean test demo engines help test-fast test-int test-sys test-perf test-all bench bench-quick bench-stress bench-baseline

@@ -75,6 +75,23 @@ $(GRID_TARGET): grid_sequencer.cpp $(LIB_OBJECTS)
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -o $@ $^ $(LIBS) -llo
 	@echo "✅ Built: $@"
 
+# Clean grid sequencer executable  
+clean_grid_sequencer: clean_grid_sequencer.cpp $(LIB_OBJECTS)
+	@echo "🔗 Linking clean grid sequencer..."
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -o $@ $^ $(LIBS) -llo
+	@echo "✅ Built: $@"
+
+# Variants for debugging
+clean_grid_sequencer_nopa: clean_grid_sequencer.cpp $(LIB_OBJECTS)
+	@echo "🔗 Linking clean grid sequencer (no PortAudio)..."
+	$(CXX) $(CXXFLAGS) -DETHER_ENABLE_PORTAUDIO=0 $(INCLUDES) -o $@ $^ $(LIBS) -llo
+	@echo "✅ Built: $@"
+
+clean_grid_sequencer_bypass: clean_grid_sequencer.cpp $(LIB_OBJECTS)
+	@echo "🔗 Linking clean grid sequencer (bypass Ether audio in callback)..."
+	$(CXX) $(CXXFLAGS) -DETHER_BYPASS_AUDIO=1 $(INCLUDES) -o $@ $^ $(LIBS) -llo
+	@echo "✅ Built: $@"
+
 # Generic object file rule
 %.o: %.cpp
 	@echo "🔨 Compiling: $<"

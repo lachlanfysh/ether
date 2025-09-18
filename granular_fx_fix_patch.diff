@@ -1,0 +1,21 @@
+--- a/src/processing/effects/GranularFX.cpp
++++ b/src/processing/effects/GranularFX.cpp
+@@ -108,6 +108,7 @@ void GranularFX::scheduleGrains(size_t blockSize) {
+         // Find free grain slot
+         bool grainScheduled = false;
+         for (size_t i = 0; i < MAX_GRAINS && !grainScheduled; i++) {
+             if (!grains_[i].active) {
+-                scheduleNewGrain(grains_[i]);
++                scheduleNewGrain(grains_[i]);
+                 grainScheduled = true;
+                 grainsLaunched++;
+             }
+@@ -124,6 +125,8 @@ void GranularFX::scheduleGrains(size_t blockSize) {
+     }
+ }
+ 
++// Forward declaration fix - method implementation follows
++
+ void GranularFX::scheduleNewGrain(Grain& grain) {
+     grain.active = true;
+     grain.windowPhase = 0.0f;

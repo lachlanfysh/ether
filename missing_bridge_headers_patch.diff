@@ -1,0 +1,13 @@
+--- a/EtherSynthBridge.h
++++ b/EtherSynthBridge.h
+@@ -107,6 +107,10 @@ void ether_set_lfo_adsr(void* synth, int instrument, int lfoIndex, float attack
+ void ether_trigger_lfo_key_sync(void* synth, int instrument);
+ void ether_trigger_lfo_envelope(void* synth, int instrument, int lfoIndex, bool noteOn);
+ 
++// Core Parameter API
++void ether_set_core_parameter(void* synth, int param_id, float value);
++float ether_get_core_parameter(void* synth, int param_id);
++
+ // ===== FX CHAIN C API =====
+ void ether_set_instrument_reverb_send(void* synth, int instrument, float amount);
+ void ether_set_instrument_delay_send(void* synth, int instrument, float amount);
